@@ -17,6 +17,7 @@ temp_test.mp4
 test_*.png
 preview_*.png
 step_*.png
+lexical_eyes_*.png
 *.log
 
 # Generated large video renders (optional: uncomment to exclude mp4s)

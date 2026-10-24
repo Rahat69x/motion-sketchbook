@@ -1,68 +1,31 @@
-# Oriental Lily Reel (Lilium Orientalis)
+# Motion Sketchbook 🎨✨
 
-> **Procedurally generated, cinematic vertical (9:16) animated video of a blooming Oriental Lily bouquet, styled like an Instagram Reel.**
+> **A curated collection of procedural, mathematical, and generative creative coding motion artworks written in Python.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Format: 9:16 1080x1920](https://img.shields.io/badge/Format-9%3A16%201080x1920-magenta.svg)](#output-specifications)
-[![Pure Procedural](https://img.shields.io/badge/Assets-100%25%20Procedural-green.svg)](#visual-and-botanical-features)
+[![Pure Procedural](https://img.shields.io/badge/Assets-100%25%20Procedural-green.svg)](#motion-sketchbook-projects)
 
 ---
 
-## Overview
+## Motion Sketchbook Projects
 
-This project procedurally models, animates, and renders a 9:16 vertical video of an Oriental Lily bouquet (*Lilium orientalis*) using pure Python mathematics (parametric Bezier curves, Bishop parallel transport frames, and OpenCV subpixel rasterization) with **zero external image assets or 3D model files**.
-
----
-
-## Visual & Botanical Features
-
-- **6 Distinct Petals in Two Whorls**:
-  - 3 broad inner petals and 3 narrower outer sepals.
-  - Realistic recurved petal tips, longitudinal midrib furrows, and wavy ruffled margins.
-  - Raised, tactile botanical speckles (papillae) modeled in 3D along the basal throat.
-- **6 Versatile Stamens & Anthers**:
-  - Long, arched filaments radiating outward around the pistil.
-  - Realistic versatile pollen-covered anthers that swivel and balance perpendicular to the filament tips.
-- **Trilobed Pistil**:
-  - Central, upright green style terminating in a distinct 3-lobed receptive stigma, standing taller than the surrounding stamens.
-- **Natural Stems & Lanceolate Leaves**:
-  - Stems with variable curvature and realistic taper from base to receptacle.
-  - Glossy, dark-green lanceolate leaves with longitudinal venation and organic gravity droop.
-- **Multi-Palette Support**:
-  - `pink`: Classic *Stargazer* lily (deep magenta core, rose-pink body, white crisp margins, dark crimson papillae).
-  - `white`: Pure *Casablanca* lily (ivory white, pale chartreuse lime throat, golden anthers).
-  - `magenta`: Vibrant *Sorbonne* lily (deep raspberry pink throughout).
-- **Cinematic Reel Atmosphere**:
-  - Studio rim lighting and Subsurface Scattering (SSS) simulation.
-  - Subtle camera drift and slow parallax zoom.
-  - Gentle idle breeze sway with natural phase offsets.
-  - Floating golden pollen particles with gentle bokeh blur.
-  - Subtle film grain, warm vignette, and an understated high-fashion botanical title card reveal.
+| Project | Description | Tech Stack | Output Format |
+| :--- | :--- | :--- | :--- |
+| **[01. Oriental Lily Reel](#01-oriental-lily-reel-lilium-orientalis)** | Procedural 3D botanical bouquet simulation with staged growth, SSS lighting, and terminal playback. | `NumPy`, `OpenCV`, `imageio-ffmpeg` | **9:16 MP4 Video** (`1080x1920`, 30 fps) |
+| **[02. Lexical Eyes](#02-lexical-eyes-typographic-vision)** | Living typographic art application where a living pair of eyes is shaped entirely from literary quotes. | `Pygame-ce`, `Pillow`, `NumPy` | **Interactive App** (Full-screen / Windowed) |
 
 ---
 
-## Output Specifications
-
-| Parameter | Specification |
-| :--- | :--- |
-| **Resolution** | Exactly **1080 x 1920** (9:16 vertical portrait) |
-| **Frame Rate** | **30 fps** |
-| **Duration** | **12.0 – 15.0 seconds** (proportional scaling via `--duration`) |
-| **Format** | **MP4** (`libx264`, `yuv420p`, `+faststart`) for instant mobile & Instagram playback |
-| **Memory Streaming** | Direct raw pipe to FFmpeg with zero RAM bloat |
-
----
-
-## Setup & Installation
+## Quickstart & Installation
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Rahat69x/oriental-lily-reel.git
-cd oriental-lily-reel
+git clone https://github.com/Rahat69x/motion-sketchbook.git
+cd motion-sketchbook
 ```
 
-### 2. Create and Activate Virtual Environment
+### 2. Set Up Virtual Environment
 ```bash
 # Windows
 python -m venv .venv
@@ -73,81 +36,93 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 3. Install Consolidated Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-> **Note on FFmpeg**: The `imageio-ffmpeg` dependency automatically downloads and provides a standalone, high-performance static FFmpeg binary. No system-level FFmpeg installation is required!
-
 ---
 
-## Usage
+## 01. Oriental Lily Reel (*Lilium orientalis*)
 
-### 1. Interactive Menu Launcher (Windows)
-Double-click `run_in_terminal.bat` or run:
-```powershell
+A procedural 3D botanical bouquet animation constructed from mathematical parametric curves and subpixel anti-aliased polygon rasterization with **zero external image assets or 3D model files**.
+
+### Visual & Botanical Features
+- **Dual-Whorl Petal Nesting**: 3 broad inner petals and 3 narrower outer sepals with ruffled margins, recurved tips, and 3D raised botanical papillae.
+- **Versatile Stamens & Pistil**: 6 arched filaments supporting versatile balanced anthers and a central trilobed stigma.
+- **Bishop Frame Transport**: Twist-free 3D tubular extrusion along cubic Bezier splines.
+- **Subsurface Scattering & Studio Lighting**: Velvety floral gradients (*Stargazer*, *Casablanca*, *Sorbonne* palettes) with floating golden pollen particles.
+- **Direct FFmpeg Pipe Streaming**: High-speed frame rendering directly into an H.264 MP4 pipe.
+
+### Run & Render
+```bash
+# Interactive Windows Launcher:
 .\run_in_terminal.bat
-```
 
-### 2. Fast Low-Resolution Preview (540x960)
-Renders a preview in seconds:
-```bash
+# Fast 540x960 Preview (takes ~5 seconds):
 python generate_lily_animation.py --preview --open
-```
 
-### 3. Render Full 1080x1920 Instagram Reel
-```bash
+# Full 1080x1920 Instagram Reel (13 seconds, 30 fps):
 python generate_lily_animation.py --output lily_reel.mp4 --duration 13.0 --palette pink --title --open
-```
 
-### 4. Command Line Flags
-| Flag | Default | Description |
-| :--- | :---: | :--- |
-| `--output` | `lily_reel.mp4` | Destination MP4 file path |
-| `--duration` | `13.0` | Video duration in seconds (12–15s recommended) |
-| `--fps` | `30` | Target frame rate |
-| `--flowers` | `6` | Number of flowers in bouquet (5 to 7) |
-| `--palette` | `pink` | Floral palette: `pink` (*Stargazer*), `white` (*Casablanca*), `magenta` (*Sorbonne*) |
-| `--seed` | `42` | Random seed for bouquet variation |
-| `--preview` | `False` | Renders at 540x960 with coarse mesh for rapid testing |
-| `--title` | `False` | Displays the elegant botanical title card at the end |
-| `--open` | `False` | Automatically launches the rendered video in the default media player |
-
----
-
-## Terminal ANSI Truecolor Player
-
-Watch the animation directly in your terminal console using 24-bit ANSI truecolor half-blocks (`▀`):
-```bash
+# Watch directly in terminal via 24-bit ANSI Truecolor half-blocks:
 python play_in_terminal.py --loop
 ```
 
 ---
 
-## Testing
+## 02. Lexical Eyes (Typographic Vision)
 
-Run the automated unit and integration test suite:
+A standalone digital art application in which **everything visible on screen is made strictly of typography**: literary quotes (Blake, Whitman, Emerson, Dickinson, Keats, Shakespeare, Nietzsche) and poetic words. Nothing is drawn as a solid shape except the ambient background, soft vignette, and clipping masks.
+
+### Visual & Kinetic Features
+- **Dual-Eye Anatomy with Asymmetry**: Two eyes side-by-side with $4^\circ-6^\circ$ upward canthal tilt, $2-4\%$ seeded anatomical asymmetry, and warm medial caruncle word clusters.
+- **4-Tier Typographic Iris**: Concentric reading-order rings, radiating spoke fibers, golden collarette, and outer limbal rings.
+- **Biological Blink Kinematics**: Asymmetric close/hold/open phases, double-blink probability ($15\%$), and Bell's phenomenon upward eye roll.
+- **Aperture Polygon Clipping**: Internal anatomy clipped smoothly to living cubic Bezier eyelid curves using `BLEND_RGBA_MULT`.
+- **Instant 256-Step LUT Colorization**: 6 rich themes (*Ember*, *Glacier*, *Verdant*, *Amethyst*, *Ink*, *Rose Gold*) with live 1-second cross-fades without re-rasterizing text.
+- **Interactive Gaze & Camera Auto-Zoom**: Critically damped spring tracking, pupil dilation, micro-saccades on idle, and cinematic macro/wide zoom timeline.
+
+### Run Lexical Eyes
 ```bash
-python test_suite.py
+# Default Launch: Native Full-Screen (DPI-aware, cursor hidden):
+python lexical_eyes.py
+
+# Resizable Windowed Testing Mode (1280x720) with live debug telemetry:
+python lexical_eyes.py --windowed --size 1280x720 --debug
+
+# Start with Glacier theme, High Quality, and custom quotes:
+python lexical_eyes.py -w --theme glacier --quality high --quotes quotes.txt
 ```
 
+### Controls Cheat Sheet
+| Key / Input | Action |
+| :--- | :--- |
+| **`B`** / **`Space`** / **Left Click** | Trigger an immediate organic blink |
+| **`Z`** | Toggle cinematic auto-zoom timeline |
+| **`Up` / `Down` / `+` / `-` / `Wheel`** | Manual camera zoom (0 resets to 1.0x) |
+| **`P` / `Right` / `Left`** | Cycle forward / backward through color themes |
+| **`1` – `6`** | Jump directly to theme (Ember, Glacier, Verdant, Amethyst, Ink, Rose Gold) |
+| **`R`** | Asynchronously regenerate layout with a new random seed (background thread) |
+| **`S`** | Save high-resolution lossless screenshot (PNG) |
+| **`G`** | Toggle Post-FX (bloom glow, film grain, vignette) |
+| **`M`** | Toggle interactive mouse reactivity |
+| **`F` / `F11`** | Toggle Fullscreen / Windowed mode live |
+| **`H` / `F1`** | Toggle frosted HUD help overlay |
+| **`Esc` / `Q`** | Gracefully quit application |
+
 ---
 
-## Architecture
+## Automated Verification & Tests
 
-- **`Petal`**: Parametric cubic Bezier centerline with Bishop parallel transport framing, midrib curvature, and ruffled margins.
-- **`Stamen` & `Pistil`**: Swept 3D cylindrical extrusions with versatile pivoted anthers and trilobed stigma head.
-- **`Stem` & `Leaf`**: Continuous geometric splines with natural unfurling and venation.
-- **`Lily`**: Flower coordinator handling staged petal unfurling, stamen emergence, and idle breeze sway.
-- **`Bouquet`**: Hierarchical 3D arrangement of 5–7 lilies at varying heights, angles, and bloom stages (open, half-open, buds).
-- **`Renderer`**: Depth sorting, subsurface scattering (SSS) lighting, camera drift, pollen particles, film grain, and pipe streaming.
+Run the test suites for both projects:
+```bash
+# Test Oriental Lily Reel parametric geometry and rendering:
+python test_suite.py
 
----
-
-## Reference & Attribution
-
-Inspired by procedural 3D botanical construction techniques demonstrated in [mishratanya2311/lily-animation-python](https://github.com/mishratanya2311/lily-animation-python) (notably parametric Bezier curves, Bishop parallel transport frames, and OpenCV subpixel anti-aliased polyfill rasterization). This project provides a clean object-oriented architecture, complete 9:16 Instagram Reel composition, multi-palette styling, and live terminal playback.
+# Test Lexical Eyes themes, LUTs, SpriteCache, and controllers:
+python test_lexical_eyes.py
+```
 
 ---
 
