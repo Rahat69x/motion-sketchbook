@@ -44,6 +44,10 @@ import pygame
 # =============================================================================
 # CONSTANTS: TUNABLE CONFIGURATION PARAMETERS
 # =============================================================================
+# Script & Asset Directories
+SCRIPT_DIR: str = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_QUOTES_PATH: str = os.path.join(SCRIPT_DIR, "quotes.txt")
+
 # Window & Display
 DEFAULT_WINDOW_WIDTH: int = 1280
 DEFAULT_WINDOW_HEIGHT: int = 720
@@ -398,6 +402,8 @@ class Lexicon:
         self.words: Dict[str, List[str]] = {k: list(v) for k, v in SINGLE_WORDS.items()}
         if quotes_file:
             self.load_quotes_file(quotes_file)
+        elif os.path.exists(DEFAULT_QUOTES_PATH):
+            self.load_quotes_file(DEFAULT_QUOTES_PATH)
         elif os.path.exists("quotes.txt"):
             self.load_quotes_file("quotes.txt")
 
@@ -440,7 +446,7 @@ class FontBank:
         self._font_cache: Dict[Tuple[str, int], ImageFont.FreeTypeFont] = {}
 
     def _discover_fonts(self) -> Dict[str, Optional[str]]:
-        search_dirs = ["./fonts"]
+        search_dirs = ["./fonts", os.path.join(SCRIPT_DIR, "fonts")]
         if self.override_path and os.path.exists(self.override_path):
             return {
                 "italic": self.override_path,
@@ -1905,11 +1911,13 @@ class LexicalEyesApp:
 
     def _load_all_quotes(self, quotes_path: Optional[str]) -> Dict[str, List[str]]:
         quotes = {k: list(v) for k, v in DEFAULT_QUOTES.items()}
-        # Check explicit path or local quotes.txt
+        # Check explicit path, script-relative quotes.txt, or local quotes.txt
         candidate_paths = []
         if quotes_path and os.path.exists(quotes_path):
             candidate_paths.append(quotes_path)
-        if os.path.exists("quotes.txt"):
+        if os.path.exists(DEFAULT_QUOTES_PATH) and DEFAULT_QUOTES_PATH not in candidate_paths:
+            candidate_paths.append(DEFAULT_QUOTES_PATH)
+        elif os.path.exists("quotes.txt") and "quotes.txt" not in candidate_paths:
             candidate_paths.append("quotes.txt")
 
         for cp in candidate_paths:
@@ -2149,8 +2157,17 @@ def main():
                         help="Keep mouse cursor visible in fullscreen mode")
     parser.add_argument("--debug", action="store_true",
                         help="Show debug telemetry overlay (FPS, sprite cache counts, gaze)")
+    parser.add_argument("--smoke-test", action="store_true",
+                        help="Run quick headless asset & lexicon verification and exit immediately")
 
     args = parser.parse_args()
+    if args.smoke_test:
+        lex = Lexicon(args.quotes)
+        whisper_count = len(lex.quotes.get("whispers", []))
+        iris_count = len(lex.quotes.get("iris", []))
+        print(f"[Lexical Eyes Smoke Test] OK: Successfully initialized Lexicon with {whisper_count} whispers and {iris_count} iris quotes (Source: {DEFAULT_QUOTES_PATH})")
+        sys.exit(0)
+
     app = LexicalEyesApp(args)
     app.run()
 
