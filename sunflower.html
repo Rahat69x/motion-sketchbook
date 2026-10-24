@@ -1590,32 +1590,91 @@
       const btn3D = document.getElementById("btn-3d");
       const label3D = document.getElementById("label-3d");
 
+      const mediaReducedMotion = (typeof window.matchMedia === "function")
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : { matches: false };
+
+      let prevRenderedRotX = null;
+      let prevRenderedRotY = null;
+
+      function startLoop() {
+        if (!animFrameId && is3DEnabled && !mediaReducedMotion.matches && !document.hidden) {
+          if (typeof requestAnimationFrame !== "undefined") {
+            animFrameId = requestAnimationFrame(update3DTilt);
+          }
+        }
+      }
+
+      function stopLoop() {
+        if (animFrameId) {
+          if (typeof cancelAnimationFrame !== "undefined") {
+            cancelAnimationFrame(animFrameId);
+          }
+          animFrameId = null;
+        }
+        stage.style.transform = "none";
+      }
+
       // Smooth Animation Loop
       function update3DTilt() {
-        if (is3DEnabled) {
-          // Autonomous subtle breathing orbit when mouse is idle
-          const idleTime = performance.now() * 0.0008;
-          const idleX = Math.sin(idleTime) * 3.5;
-          const idleY = Math.cos(idleTime * 0.7) * 4.5;
-
-          const destX = targetRotX + idleX;
-          const destY = targetRotY + idleY;
-
-          // Smooth interpolation (lerp)
-          currentRotX += (destX - currentRotX) * 0.08;
-          currentRotY += (destY - currentRotY) * 0.08;
-
-          stage.style.transform = `rotateX(${currentRotX.toFixed(2)}deg) rotateY(${currentRotY.toFixed(2)}deg) scale(1.02)`;
-        } else {
-          stage.style.transform = "none";
+        if (!is3DEnabled || mediaReducedMotion.matches || document.hidden) {
+          stopLoop();
+          return;
         }
+
+        // Autonomous subtle breathing orbit when mouse is idle
+        const idleTime = performance.now() * 0.0008;
+        const idleX = Math.sin(idleTime) * 3.5;
+        const idleY = Math.cos(idleTime * 0.7) * 4.5;
+
+        const destX = targetRotX + idleX;
+        const destY = targetRotY + idleY;
+
+        // Smooth interpolation (lerp)
+        currentRotX += (destX - currentRotX) * 0.08;
+        currentRotY += (destY - currentRotY) * 0.08;
+
+        const rotXFixed = parseFloat(currentRotX.toFixed(2));
+        const rotYFixed = parseFloat(currentRotY.toFixed(2));
+
+        // Skip writing styles on frames where nothing changed
+        if (rotXFixed !== prevRenderedRotX || rotYFixed !== prevRenderedRotY) {
+          stage.style.transform = `rotateX(${rotXFixed}deg) rotateY(${rotYFixed}deg) scale(1.02)`;
+          prevRenderedRotX = rotXFixed;
+          prevRenderedRotY = rotYFixed;
+        }
+
         if (typeof requestAnimationFrame !== "undefined") {
           animFrameId = requestAnimationFrame(update3DTilt);
         }
       }
-      if (typeof requestAnimationFrame !== "undefined") {
-        animFrameId = requestAnimationFrame(update3DTilt);
+
+      // Start loop initially if motion is allowed
+      if (!mediaReducedMotion.matches) {
+        startLoop();
+      } else {
+        stage.style.transform = "none";
       }
+
+      // Listen for reduced motion preference changes
+      if (mediaReducedMotion.addEventListener) {
+        mediaReducedMotion.addEventListener("change", (e) => {
+          if (e.matches) {
+            stopLoop();
+          } else {
+            startLoop();
+          }
+        });
+      }
+
+      // Pause loop when document is hidden to conserve battery
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopLoop();
+        } else {
+          startLoop();
+        }
+      });
 
       // Desktop Mouse Move
       window.addEventListener("mousemove", (e) => {
@@ -1658,10 +1717,11 @@
         if (is3DEnabled) {
           btn3D.classList.add("active-badge");
           label3D.textContent = "3D Depth: On";
+          startLoop();
         } else {
           btn3D.classList.remove("active-badge");
           label3D.textContent = "3D Depth: Off";
-          stage.style.transform = "none";
+          stopLoop();
         }
       });
     }
