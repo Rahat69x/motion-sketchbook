@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       user.id
     );
 
-    saveATSAnalysis(analysis);
+    await saveATSAnalysis(analysis);
 
     return NextResponse.json({ analysis, message: "ATS compatibility analysis completed successfully." });
   } catch (error) {

@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
-    saveResume(newResume);
+    await saveResume(newResume);
     return NextResponse.json({ resume: newResume, message: "Resume created successfully." }, { status: 201 });
   } catch (error) {
     console.error("Create resume error:", error);

@@ -508,9 +508,62 @@ export function readDB(): DatabaseSchema {
 // Write database atomically
 export function writeDB(data: DatabaseSchema): void {
   ensureDataDir();
-  const tmpFile = `${DB_FILE}.tmp`;
-  fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), "utf-8");
-  fs.renameSync(tmpFile, DB_FILE);
+  const content = JSON.stringify(data, null, 2);
+  const tmpFile = `${DB_FILE}.${Date.now()}_${Math.random().toString(36).substring(2, 7)}.tmp`;
+  fs.writeFileSync(tmpFile, content, "utf-8");
+
+  let retries = 8;
+  while (retries > 0) {
+    try {
+      fs.renameSync(tmpFile, DB_FILE);
+      return;
+    } catch (err: any) {
+      if (err.code === "EPERM" || err.code === "EBUSY" || err.code === "EEXIST") {
+        retries--;
+        if (retries === 0) {
+          try {
+            fs.copyFileSync(tmpFile, DB_FILE);
+            try { fs.unlinkSync(tmpFile); } catch {}
+            return;
+          } catch {
+            fs.writeFileSync(DB_FILE, content, "utf-8");
+            try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile); } catch {}
+            return;
+          }
+        }
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+// Serialized write path with async mutex queue
+let writeMutex: Promise<unknown> = Promise.resolve();
+
+/**
+ * Executes a database mutation with exclusive write locking.
+ * Chains through an async mutex queue, reads fresh data from disk,
+ * executes the mutator, writes atomically to a temporary file, renames,
+ * and releases the lock for the next operation in line.
+ */
+export async function updateDB<T>(mutator: (db: DatabaseSchema) => T | Promise<T>): Promise<T> {
+  const currentLock = writeMutex;
+  let release: () => void = () => {};
+  writeMutex = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  try {
+    await currentLock;
+    const db = readDB();
+    const result = await mutator(db);
+    writeDB(db);
+    return result;
+  } finally {
+    release();
+  }
 }
 
 // ============================================================================
@@ -528,20 +581,20 @@ export function findUserById(id: string): User | undefined {
   return db.users.find((u) => u.id === id);
 }
 
-export function createUser(user: User): User {
-  const db = readDB();
-  db.users.push(user);
-  writeDB(db);
-  return user;
+export async function createUser(user: User): Promise<User> {
+  return updateDB((db) => {
+    db.users.push(user);
+    return user;
+  });
 }
 
-export function updateUser(id: string, updates: Partial<User>): User | undefined {
-  const db = readDB();
-  const idx = db.users.findIndex((u) => u.id === id);
-  if (idx === -1) return undefined;
-  db.users[idx] = { ...db.users[idx], ...updates, updatedAt: new Date().toISOString() };
-  writeDB(db);
-  return db.users[idx];
+export async function updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+  return updateDB((db) => {
+    const idx = db.users.findIndex((u) => u.id === id);
+    if (idx === -1) return undefined;
+    db.users[idx] = { ...db.users[idx], ...updates, updatedAt: new Date().toISOString() };
+    return db.users[idx];
+  });
 }
 
 // Resumes
@@ -555,53 +608,52 @@ export function getResumeById(id: string, userId: string): Resume | undefined {
   return db.resumes.find((r) => r.id === id && r.userId === userId);
 }
 
-export function saveResume(resume: Resume): Resume {
-  const db = readDB();
-  const idx = db.resumes.findIndex((r) => r.id === resume.id && r.userId === resume.userId);
-  if (idx >= 0) {
-    db.resumes[idx] = { ...resume, updatedAt: new Date().toISOString() };
-  } else {
-    db.resumes.push({ ...resume, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-  }
-  writeDB(db);
-  return resume;
+export async function saveResume(resume: Resume): Promise<Resume> {
+  return updateDB((db) => {
+    const idx = db.resumes.findIndex((r) => r.id === resume.id && r.userId === resume.userId);
+    if (idx >= 0) {
+      db.resumes[idx] = { ...resume, updatedAt: new Date().toISOString() };
+    } else {
+      db.resumes.push({ ...resume, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    }
+    return resume;
+  });
 }
 
-export function deleteResume(id: string, userId: string): boolean {
-  const db = readDB();
-  const initialLen = db.resumes.length;
-  db.resumes = db.resumes.filter((r) => !(r.id === id && r.userId === userId));
-  if (db.resumes.length !== initialLen) {
-    writeDB(db);
-    return true;
-  }
-  return false;
+export const updateResume = saveResume;
+
+export async function deleteResume(id: string, userId: string): Promise<boolean> {
+  return updateDB((db) => {
+    const initialLen = db.resumes.length;
+    db.resumes = db.resumes.filter((r) => !(r.id === id && r.userId === userId));
+    return db.resumes.length !== initialLen;
+  });
 }
 
-export function duplicateResume(id: string, userId: string): Resume | undefined {
-  const db = readDB();
-  const original = db.resumes.find((r) => r.id === id && r.userId === userId);
-  if (!original) return undefined;
+export async function duplicateResume(id: string, userId: string): Promise<Resume | undefined> {
+  return updateDB((db) => {
+    const original = db.resumes.find((r) => r.id === id && r.userId === userId);
+    if (!original) return undefined;
 
-  const newResume: Resume = {
-    ...JSON.parse(JSON.stringify(original)),
-    id: `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    title: `${original.title} (Copy)`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+    const newResume: Resume = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title: `${original.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-  db.resumes.push(newResume);
-  writeDB(db);
-  return newResume;
+    db.resumes.push(newResume);
+    return newResume;
+  });
 }
 
 // ATS Analyses
-export function saveATSAnalysis(analysis: ATSAnalysis): ATSAnalysis {
-  const db = readDB();
-  db.atsAnalyses.unshift(analysis);
-  writeDB(db);
-  return analysis;
+export async function saveATSAnalysis(analysis: ATSAnalysis): Promise<ATSAnalysis> {
+  return updateDB((db) => {
+    db.atsAnalyses.unshift(analysis);
+    return analysis;
+  });
 }
 
 export function getATSAnalysesByUserId(userId: string): ATSAnalysis[] {
@@ -610,11 +662,11 @@ export function getATSAnalysesByUserId(userId: string): ATSAnalysis[] {
 }
 
 // Mock Interviews
-export function createInterviewSession(session: InterviewSession): InterviewSession {
-  const db = readDB();
-  db.interviewSessions.unshift(session);
-  writeDB(db);
-  return session;
+export async function createInterviewSession(session: InterviewSession): Promise<InterviewSession> {
+  return updateDB((db) => {
+    db.interviewSessions.unshift(session);
+    return session;
+  });
 }
 
 export function getInterviewSessionById(id: string, userId: string): InterviewSession | undefined {
@@ -627,15 +679,17 @@ export function getInterviewSessionsByUserId(userId: string): InterviewSession[]
   return db.interviewSessions.filter((s) => s.userId === userId);
 }
 
-export function updateInterviewSession(session: InterviewSession): InterviewSession {
-  const db = readDB();
-  const idx = db.interviewSessions.findIndex((s) => s.id === session.id && s.userId === session.userId);
-  if (idx >= 0) {
-    db.interviewSessions[idx] = session;
-    writeDB(db);
-  }
-  return session;
+export async function updateInterviewSession(session: InterviewSession): Promise<InterviewSession> {
+  return updateDB((db) => {
+    const idx = db.interviewSessions.findIndex((s) => s.id === session.id && s.userId === session.userId);
+    if (idx >= 0) {
+      db.interviewSessions[idx] = session;
+    }
+    return session;
+  });
 }
+
+export const saveInterviewSession = updateInterviewSession;
 
 // Aptitude
 export function getAptitudeQuestions(category?: string, limit?: number): AptitudeQuestion[] {
@@ -650,11 +704,11 @@ export function getAptitudeQuestions(category?: string, limit?: number): Aptitud
   return list;
 }
 
-export function saveAptitudeAttempt(attempt: AptitudeAttempt): AptitudeAttempt {
-  const db = readDB();
-  db.aptitudeAttempts.unshift(attempt);
-  writeDB(db);
-  return attempt;
+export async function saveAptitudeAttempt(attempt: AptitudeAttempt): Promise<AptitudeAttempt> {
+  return updateDB((db) => {
+    db.aptitudeAttempts.unshift(attempt);
+    return attempt;
+  });
 }
 
 export function getAptitudeAttemptsByUserId(userId: string): AptitudeAttempt[] {

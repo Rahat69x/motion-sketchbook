@@ -206,6 +206,89 @@ async function runTestSuite() {
   assert(graded.answers[2].isCorrect === false, "Incorrect answer flagged as isCorrect: false");
   assert(typeof graded.answers[0].explanation === 'string', "Mathematical explanation revealed after submission");
 
+  // TEST 6: JSON Storage Layer Concurrency Mutex & Zero Record Loss
+  console.log('\n--- 5. STORAGE CONCURRENCY & MUTEX INTEGRITY ---');
+  const path = require('path');
+  const fs = require('fs');
+  const { createDbClient } = require('./db_test_wrapper.js');
+
+  const testDbPath = path.join(__dirname, 'test_concurrency_db.json');
+  if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+
+  const testDb = createDbClient(testDbPath);
+
+  // Fire 50 concurrent writes in parallel across different record types
+  const concurrentTasks = [];
+
+  // 15 Resumes
+  for (let i = 0; i < 15; i++) {
+    concurrentTasks.push(
+      testDb.saveResume({
+        id: `res_concurrent_${i}`,
+        userId: "usr_concurrent_test",
+        title: `Resume ${i}`,
+        template: "modern"
+      })
+    );
+  }
+
+  // 15 Aptitude Attempts
+  for (let i = 0; i < 15; i++) {
+    concurrentTasks.push(
+      testDb.saveAptitudeAttempt({
+        id: `apt_attempt_${i}`,
+        userId: "usr_concurrent_test",
+        score: i * 2,
+        totalQuestions: 10
+      })
+    );
+  }
+
+  // 10 Interview Sessions
+  for (let i = 0; i < 10; i++) {
+    concurrentTasks.push(
+      testDb.createInterviewSession({
+        id: `interview_session_${i}`,
+        userId: "usr_concurrent_test",
+        category: "behavioral",
+        targetRole: "Software Engineer"
+      })
+    );
+  }
+
+  // 10 ATS Analyses
+  for (let i = 0; i < 10; i++) {
+    concurrentTasks.push(
+      testDb.saveATSAnalysis({
+        id: `ats_analysis_${i}`,
+        userId: "usr_concurrent_test",
+        score: 80 + i,
+        jobTitle: `Frontend Developer ${i}`
+      })
+    );
+  }
+
+  assert(concurrentTasks.length === 50, "Generated 50 concurrent mutating requests");
+  await Promise.all(concurrentTasks);
+
+  // Read fresh state directly from disk to verify atomic persistence
+  const savedDb = testDb.readDB();
+  const totalSaved =
+    savedDb.resumes.length +
+    savedDb.aptitudeAttempts.length +
+    savedDb.interviewSessions.length +
+    savedDb.atsAnalyses.length;
+
+  assert(savedDb.resumes.length === 15, "All 15 concurrent resumes safely persisted");
+  assert(savedDb.aptitudeAttempts.length === 15, "All 15 concurrent aptitude attempts safely persisted");
+  assert(savedDb.interviewSessions.length === 10, "All 10 concurrent interview sessions safely persisted");
+  assert(savedDb.atsAnalyses.length === 10, "All 10 concurrent ATS analyses safely persisted");
+  assert(totalSaved === 50, `Zero record loss: Exactly 50/50 concurrent updates serialized and saved (Got: ${totalSaved})`);
+
+  // Clean up test file
+  if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+  if (fs.existsSync(`${testDbPath}.tmp`)) fs.unlinkSync(`${testDbPath}.tmp`);
+
   console.log('\n====================================================');
   console.log(`  TEST RESULTS: ${passedTests} PASSED, ${failedTests} FAILED`);
   console.log('====================================================\n');

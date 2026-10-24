@@ -38,12 +38,12 @@ export function sanitizeQuestionForClient(q: AptitudeQuestion): PublicAptitudeQu
 /**
  * Evaluates submitted aptitude responses securely on the server.
  */
-export function evaluateAptitudeTest(
+export async function evaluateAptitudeTest(
   userId: string,
   category: AptitudeCategory | "all",
   mode: "practice" | "timed",
   userAnswers: Array<{ questionId: string; selectedOption: string; timeSpentSeconds: number }>
-): {
+): Promise<{
   attempt: AptitudeAttempt;
   results: Array<{
     question: AptitudeQuestion;
@@ -51,7 +51,7 @@ export function evaluateAptitudeTest(
     isCorrect: boolean;
     explanation: string;
   }>;
-} {
+}> {
   const allQuestions = getAptitudeQuestions();
   const qMap = new Map<string, AptitudeQuestion>();
   allQuestions.forEach((q) => qMap.set(q.id, q));
@@ -105,7 +105,7 @@ export function evaluateAptitudeTest(
     createdAt: new Date().toISOString(),
   };
 
-  saveAptitudeAttempt(attempt);
+  await saveAptitudeAttempt(attempt);
 
   return { attempt, results };
 }

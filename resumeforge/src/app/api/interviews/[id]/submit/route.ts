@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    updateInterviewSession(session);
+    await updateInterviewSession(session);
 
     return NextResponse.json({
       session,

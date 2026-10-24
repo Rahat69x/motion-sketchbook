@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const questionCount = Math.min(7, Math.max(1, Number(body.questionCount) || 3));
 
     const session = generateInterviewSession(user.id, category, targetRole, difficulty, questionCount);
-    createInterviewSession(session);
+    await createInterviewSession(session);
 
     return NextResponse.json({ session, message: "Interview session created successfully." }, { status: 201 });
   } catch (error) {

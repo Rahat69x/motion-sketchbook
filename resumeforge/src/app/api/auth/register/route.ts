@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
-    createUser(newUser);
+    await createUser(newUser);
 
     const token = signSessionToken({ userId: newUser.id, email: newUser.email });
 

@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { name, university, degree, graduationYear, targetRole } = body;
 
-    const updated = updateUser(user.id, {
+    const updated = await updateUser(user.id, {
       name: name?.trim() || user.name,
       university: university?.trim() || user.university,
       degree: degree?.trim() || user.degree,

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const targetCategory: AptitudeCategory | "all" = category || "all";
     const targetMode: "practice" | "timed" = mode || "practice";
 
-    const { attempt, results } = evaluateAptitudeTest(user.id, targetCategory, targetMode, answers);
+    const { attempt, results } = await evaluateAptitudeTest(user.id, targetCategory, targetMode, answers);
 
     return NextResponse.json({
       attempt,

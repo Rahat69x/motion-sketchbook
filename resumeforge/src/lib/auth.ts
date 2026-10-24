@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { findUserById, findUserByEmail, createUser } from "./db";
+import { findUserById, findUserByEmail } from "./db";
 import { User, UserPublicProfile } from "./types";
 
 export function getJwtSecret(): string {

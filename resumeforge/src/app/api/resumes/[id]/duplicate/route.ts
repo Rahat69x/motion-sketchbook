@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const copy = duplicateResume(id, user.id);
+  const copy = await duplicateResume(id, user.id);
   if (!copy) {
     return NextResponse.json({ error: "Resume not found to duplicate." }, { status: 404 });
   }

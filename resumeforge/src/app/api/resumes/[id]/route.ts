@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       updatedAt: new Date().toISOString(),
     };
 
-    saveResume(updated);
+    await saveResume(updated);
     return NextResponse.json({ resume: updated, message: "Resume saved successfully." });
   } catch (error) {
     console.error("Update resume error:", error);
@@ -58,7 +58,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const success = deleteResume(id, user.id);
+  const success = await deleteResume(id, user.id);
   if (!success) {
     return NextResponse.json({ error: "Resume not found or already deleted." }, { status: 404 });
   }
