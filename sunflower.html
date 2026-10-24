@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sunflowers — A Living Painting</title>
+  <style>
+    /* ==========================================================================
+       1. CORE RESETS & THEME
+       ========================================================================== */
+    :root {
+      --bg-color: #030305;
+      --gold-glow: #e29b12;
+      --text-muted: #8c8270;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      color: #eae5d9;
+      font-family: var(--font-family);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Full-screen stage */
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 60%, #0d0a05 0%, #030305 75%, #010102 100%);
+    }
+
+    svg#sunflower-art {
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: auto;
+    }
+
+    /* Ambient background golden breathing glow */
+    .ambient-glow {
+      opacity: 0;
+      transform-origin: center center;
+      animation: glowFadeIn 4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+                 glowBreathe 9s ease-in-out infinite alternate 4s;
+    }
+
+    @keyframes glowFadeIn {
+      from { opacity: 0; transform: scale(0.65); }
+      to   { opacity: 0.72; transform: scale(1.0); }
+    }
+
+    @keyframes glowBreathe {
+      0%   { opacity: 0.65; transform: scale(0.96); }
+      100% { opacity: 0.88; transform: scale(1.06); }
+    }
+
+    /* Floating ambient pollen particles */
+    .drifting-speck {
+      opacity: 0;
+      animation: floatSpeck var(--dur, 12s) cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes floatSpeck {
+      0% {
+        opacity: 0;
+        transform: translateY(0px) translateX(0px);
+      }
+      20% {
+        opacity: var(--max-alpha, 0.7);
+      }
+      80% {
+        opacity: var(--max-alpha, 0.7);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-240px) translateX(var(--drift-x, 30px));
+      }
+    }
+
+    /* ==========================================================================
+       2. OUTLINE-FIRST THEN COLOR ANIMATION CLASSES
+       ========================================================================== */
+
+    /* Phase 1: Pure stroke sketching with pathLength=1 normalization */
+    .draw-stroke {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: strokeAnimation var(--dur, 1.2s) cubic-bezier(0.35, 0.7, 0.25, 1) forwards;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes strokeAnimation {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    /* Phase 2: Dual outline-drawing then outline softening */
+    .soften-outline {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: strokeAnimation var(--draw-dur, 1.0s) cubic-bezier(0.35, 0.7, 0.25, 1) forwards,
+                 fadeOutline 0.8s ease forwards;
+      animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + var(--draw-dur, 1.0s) * 0.8);
+    }
+
+    @keyframes fadeOutline {
+      to {
+        stroke-opacity: var(--soft-opacity, 0.4);
+        stroke-width: var(--soft-width, 0.8px);
+      }
+    }
+
+    /* Phase 3: Shape fill fade-in */
+    .fade-fill {
+      opacity: 0;
+      animation: revealFill var(--fade-dur, 0.9s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      animation-delay: var(--fill-delay, 0s);
+    }
+
+    @keyframes revealFill {
+      0%   { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* Petal growth: unfurling out from base with slight organic expansion */
+    .petal-unfurl {
+      opacity: 0;
+      transform-origin: var(--origin-x) var(--origin-y);
+      animation: unfurlAction var(--dur, 0.95s) cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes unfurlAction {
+      0% {
+        opacity: 0;
+        transform: scale(0.18) rotate(var(--jitter-rot, 3deg));
+      }
+      45% {
+        opacity: 0.85;
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1.0) rotate(0deg);
+      }
+    }
+
+    /* Head glow: soft warm expansion behind the petals */
+    .head-halo {
+      opacity: 0;
+      transform-origin: var(--origin-x) var(--origin-y);
+      animation: haloExpansion var(--dur, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes haloExpansion {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+      100% {
+        opacity: var(--target-opacity, 0.65);
+        transform: scale(1.0);
+      }
+    }
+
+    /* Seeds blooming outward from center on phyllotaxis spiral */
+    .seed-spiral-bloom {
+      opacity: 0;
+      transform-origin: var(--origin-x) var(--origin-y);
+      animation: seedBloomAnimation var(--dur, 1.4s) cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes seedBloomAnimation {
+      0% {
+        opacity: 0;
+        transform: scale(0.12);
+      }
+      50% {
+        opacity: 0.7;
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1.0);
+      }
+    }
+
+    /* Gentle post-bloom breeze sway per flower */
+    .flower-group {
+      transform-origin: var(--base-x) var(--base-y);
+      animation: breezeSway var(--sway-period, 7.5s) ease-in-out infinite alternate;
+      animation-delay: var(--sway-delay, 16s);
+    }
+
+    @keyframes breezeSway {
+      0%   { transform: rotate(calc(-1 * var(--sway-amp, 1.2deg))); }
+      100% { transform: rotate(var(--sway-amp, 1.2deg)); }
+    }
+
+    /* ==========================================================================
+       3. REPLAY BUTTON & CONTROLS UI
+       ========================================================================== */
+    .ui-controls {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 100;
+    }
+
+    .btn-replay {
+      background: rgba(22, 18, 12, 0.65);
+      border: 1px solid rgba(226, 155, 18, 0.32);
+      border-radius: 999px;
+      color: #f7dfa5;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 9px 18px 9px 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 15px rgba(226, 155, 18, 0.12);
+    }
+
+    .btn-replay:hover {
+      background: rgba(38, 28, 16, 0.85);
+      border-color: rgba(240, 185, 55, 0.65);
+      color: #fff4d2;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 22px rgba(226, 155, 18, 0.28);
+      transform: translateY(-1px);
+    }
+
+    .btn-replay:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-replay svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.4s ease;
+    }
+
+    .btn-replay:hover svg {
+      transform: rotate(-180deg);
+    }
+
+    .seed-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      opacity: 0.85;
+    }
+
+    /* Accessibility: Respect Reduced Motion Preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.001s !important;
+      }
+      .draw-stroke, .soften-outline {
+        stroke-dashoffset: 0 !important;
+      }
+      .fade-fill, .petal-unfurl, .head-halo, .seed-spiral-bloom {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating UI -->
+  <header class="ui-controls" role="toolbar" aria-label="Artwork controls">
+    <span class="seed-badge" id="seed-indicator">Seed: 42</span>
+    <button class="btn-replay" id="btn-replay" aria-label="Repaint artwork with a new random seed (or press R)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      <span>Repaint</span>
+    </button>
+  </header>
+
+  <!-- SVG Drawing Canvas -->
+  <main id="canvas-container">
+    <svg id="sunflower-art" role="img" aria-label="A painterly botanical bouquet of sunflowers blooming on a dark canvas">
+      <defs id="svg-defs">
+        <!-- Reusable Master Gradients & Filters Defined Dynamically -->
+      </defs>
+      <!-- Layered Scene Graph -->
+      <g id="layer-ambient-glow"></g>
+      <g id="layer-flowers"></g>
+      <g id="layer-pollen"></g>
+      <g id="layer-vignette-grain" pointer-events="none"></g>
+    </svg>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * SUNFLOWERS — A LIVING PAINTING
+     * =========================================================================
+     * Procedural SVG generation with two-pass outline-sketch then color-fill
+     * reveals, phyllotaxis seed spirals, wobbly painterly contours, and
+     * organic breeze sway.
+     */
+
+    // --- 1. SEEDED PSEUDO-RANDOM GENERATOR (Mulberry32) ---
+    function createPRNG(seed) {
+      let s = seed >>> 0;
+      return function() {
+        let t = (s += 0x6D2B79F5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    let currentSeed = 42;
+    let rng = createPRNG(currentSeed);
+
+    function rand(min, max) {
+      return min + rng() * (max - min);
+    }
+    function randInt(min, max) {
+      return Math.floor(rand(min, max + 1));
+    }
+    function randWobble(val, pct = 0.05) {
+      return val * (1 + rand(-pct, pct));
+    }
+
+    // --- 2. VECTOR & GEOMETRIC MATH HELPERS ---
+    function evalCubicBezier(p0, p1, p2, p3, t) {
+      const mt = 1 - t;
+      const mt2 = mt * mt;
+      const t2 = t * t;
+      return {
+        x: mt2 * mt * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t2 * t * p3.x,
+        y: mt2 * mt * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t2 * t * p3.y
+      };
+    }
+
+    function evalCubicBezierTangent(p0, p1, p2, p3, t) {
+      const mt = 1 - t;
+      const t2 = t * t;
+      const dx = 3 * mt * mt * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x);
+      const dy = 3 * mt * mt * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y);
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: dx / len, y: dy / len, angle: Math.atan2(dy, dx) };
+    }
+
+    // SVG namespace helper
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    function createSVGEl(tag, attrs = {}) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, v);
+      }
+      return el;
+    }
+
+    // --- 3. REUSABLE GRADIENTS & ATMOSPHERE DEFS ---
+    function setupMasterDefs(defsEl) {
+      defsEl.innerHTML = `
+        <!-- Soft golden background glow -->
+        <radialGradient id="grad-bg-glow" cx="50%" cy="52%" r="50%">
+          <stop offset="0%" stop-color="#4d2f08" stop-opacity="0.85"/>
+          <stop offset="35%" stop-color="#2a1804" stop-opacity="0.55"/>
+          <stop offset="70%" stop-color="#110a02" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#030305" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- Head halo backlight -->
+        <radialGradient id="grad-head-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f8be28" stop-opacity="0.75"/>
+          <stop offset="45%" stop-color="#d97f12" stop-opacity="0.4"/>
+          <stop offset="80%" stop-color="#803e05" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#030305" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- Stem horizontal gradient (dark margin, bright midrib, dark margin) -->
+        <linearGradient id="grad-stem" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#203314"/>
+          <stop offset="28%" stop-color="#4e6e28"/>
+          <stop offset="55%" stop-color="#739a38"/>
+          <stop offset="80%" stop-color="#466524"/>
+          <stop offset="100%" stop-color="#1a2b10"/>
+        </linearGradient>
+
+        <!-- Leaf blade gradient (dark rich base to warm sunlit olive tip) -->
+        <linearGradient id="grad-leaf" x1="0%" y1="100%" x2="40%" y2="0%">
+          <stop offset="0%" stop-color="#1d3012"/>
+          <stop offset="35%" stop-color="#3b591f"/>
+          <stop offset="70%" stop-color="#5a802b"/>
+          <stop offset="100%" stop-color="#7e9e3c"/>
+        </linearGradient>
+
+        <!-- Petal gradients: Tone A (Vibrant Sunlight Gold) -->
+        <linearGradient id="grad-petal-a" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#ba6609"/>
+          <stop offset="22%" stop-color="#e28812"/>
+          <stop offset="60%" stop-color="#f9be18"/>
+          <stop offset="90%" stop-color="#fedc4c"/>
+          <stop offset="100%" stop-color="#fff492"/>
+        </linearGradient>
+
+        <!-- Petal gradients: Tone B (Deep Amber/Warm Apricot) -->
+        <linearGradient id="grad-petal-b" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#9a4d06"/>
+          <stop offset="26%" stop-color="#c96f0b"/>
+          <stop offset="65%" stop-color="#f3a414"/>
+          <stop offset="92%" stop-color="#fbc83b"/>
+          <stop offset="100%" stop-color="#ffea7e"/>
+        </linearGradient>
+
+        <!-- Petal gradients: Tone C (Back Whorl Rich Spiced Bronze) -->
+        <linearGradient id="grad-petal-back" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#753503"/>
+          <stop offset="28%" stop-color="#a65408"/>
+          <stop offset="70%" stop-color="#d67f0f"/>
+          <stop offset="100%" stop-color="#f1a620"/>
+        </linearGradient>
+
+        <!-- Seed disc dome gradient -->
+        <radialGradient id="grad-seed-dome" cx="42%" cy="40%" r="58%">
+          <stop offset="0%" stop-color="#543118"/>
+          <stop offset="40%" stop-color="#361e0e"/>
+          <stop offset="75%" stop-color="#1e1008"/>
+          <stop offset="100%" stop-color="#0c0704"/>
+        </radialGradient>
+
+        <!-- Soft shadow ring under the seed head -->
+        <radialGradient id="grad-head-shadow" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stop-color="#050302" stop-opacity="0"/>
+          <stop offset="85%" stop-color="#050302" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#050302" stop-opacity="0.85"/>
+        </radialGradient>
+
+        <!-- Soft painterly edge filter -->
+        <filter id="soft-glow-blur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="28"/>
+        </filter>
+
+        <!-- Fine subtle canvas grain texture -->
+        <filter id="paper-grain" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="3" result="noise" seed="17"/>
+          <feColorMatrix type="matrix" values="0 0 0 0 0.8  0 0 0 0 0.72  0 0 0 0 0.45  0 0 0 0.045 0"/>
+        </filter>
+
+        <!-- Stem base soft fade-out mask -->
+        <linearGradient id="grad-stem-fade" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+          <stop offset="78%" stop-color="#fff" stop-opacity="1"/>
+          <stop offset="97%" stop-color="#fff" stop-opacity="0.1"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <mask id="stem-fade-mask">
+          <rect x="-2000" y="-2000" width="4000" height="4000" fill="url(#grad-stem-fade)"/>
+        </mask>
+      `;
+    }
+
+    // --- 4. PROCEDURAL PROCEDURES FOR FLOWER ANATOMY ---
+
+    /**
+     * Builds a curved, tapered stem with tiny hairs along the edges.
+     */
+    function buildStemGeometry(p0, p1, p2, p3, wBase, wTip, steps = 38) {
+      const leftPts = [];
+      const rightPts = [];
+      const hairs = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const pt = evalCubicBezier(p0, p1, p2, p3, t);
+        const tan = evalCubicBezierTangent(p0, p1, p2, p3, t);
+
+        // Normal perpendicular to tangent (-dy, dx)
+        const nx = -tan.y;
+        const ny = tan.x;
+
+        // Taper width from base to tip with slight organic wobble
+        const w = (wBase * (1 - t) + wTip * t) * (1 + rand(-0.04, 0.04));
+        const hw = w * 0.5;
+
+        const lx = pt.x - nx * hw;
+        const ly = pt.y - ny * hw;
+        const rx = pt.x + nx * hw;
+        const ry = pt.y + ny * hw;
+
+        leftPts.push({ x: lx, y: ly });
+        rightPts.push({ x: rx, y: ry });
+
+        // Occasional tiny epidermal stem hairs
+        if (i > 3 && i < steps - 3 && rng() < 0.28) {
+          const hairSide = rng() < 0.5 ? -1 : 1;
+          const hairBase = hairSide === -1 ? { x: lx, y: ly } : { x: rx, y: ry };
+          const hairLen = rand(2.2, 5.5);
+          const hairAng = tan.angle + hairSide * rand(1.1, 1.8);
+          hairs.push({
+            x1: hairBase.x,
+            y1: hairBase.y,
+            x2: hairBase.x + Math.cos(hairAng) * hairLen,
+            y2: hairBase.y + Math.sin(hairAng) * hairLen
+          });
+        }
+      }
+
+      // Format SVG paths
+      const leftLineD = "M " + leftPts.map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ");
+      const rightLineD = "M " + rightPts.map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ");
+      const fillD = leftLineD + " L " + rightPts.slice().reverse().map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ") + " Z";
+
+      return { leftLineD, rightLineD, fillD, hairs };
+    }
+
+    /**
+     * Builds a pointed, heart-shaped leaf with stalk, serrated margins, midrib, and 5 vein pairs.
+     */
+    function buildLeafGeometry(stemPt, stemTangent, side, length, width) {
+      // Branch angle off stem (~45-65 degrees drooping)
+      const stalkLen = length * 0.28;
+      const branchAngle = stemTangent.angle + side * rand(0.75, 1.15);
+
+      // Stalk start and leaf blade base
+      const pBase = {
+        x: stemPt.x + Math.cos(branchAngle) * stalkLen,
+        y: stemPt.y + Math.sin(branchAngle) * stalkLen
+      };
+
+      // Leaf tip droops under natural gravity
+      const droop = rand(15, 32);
+      const pTip = {
+        x: pBase.x + Math.cos(branchAngle) * length + side * rand(-8, 14),
+        y: pBase.y + Math.sin(branchAngle) * length + droop
+      };
+
+      // Midrib control points
+      const pMid1 = {
+        x: pBase.x + (pTip.x - pBase.x) * 0.4 + side * 8,
+        y: pBase.y + (pTip.y - pBase.y) * 0.35 + droop * 0.25
+      };
+      const pMid2 = {
+        x: pBase.x + (pTip.x - pBase.x) * 0.75 + side * 4,
+        y: pBase.y + (pTip.y - pBase.y) * 0.7 + droop * 0.65
+      };
+
+      // Leaf blade margin curvature with slight hand-drawn serration
+      const dx = pTip.x - pBase.x;
+      const dy = pTip.y - pBase.y;
+      const chordLen = Math.hypot(dx, dy) || 1;
+      const nx = -dy / chordLen;
+      const ny = dx / chordLen;
+
+      // Serrated lateral contour points
+      const numPts = 12;
+      const leftMargin = [];
+      const rightMargin = [];
+
+      for (let i = 0; i <= numPts; i++) {
+        const u = i / numPts;
+        const ribPt = evalCubicBezier(pBase, pMid1, pMid2, pTip, u);
+        // Profile width: heart-like base tapering to sharp point
+        const wProfile = Math.sin(Math.pow(u, 0.72) * Math.PI) * width;
+        const serration = (i > 1 && i < numPts - 1) ? (i % 2 === 0 ? 1.04 : 0.96) : 1.0;
+
+        const hw = wProfile * 0.5 * serration;
+        leftMargin.push({ x: ribPt.x - nx * hw, y: ribPt.y - ny * hw });
+        rightMargin.push({ x: ribPt.x + nx * hw, y: ribPt.y + ny * hw });
+      }
+
+      // Paths
+      const stalkD = `M ${stemPt.x.toFixed(2)} ${stemPt.y.toFixed(2)} Q ${(stemPt.x + pBase.x) * 0.5} ${(stemPt.y + pBase.y) * 0.5} ${pBase.x.toFixed(2)} ${pBase.y.toFixed(2)}`;
+      const midribD = `M ${pBase.x.toFixed(2)} ${pBase.y.toFixed(2)} C ${pMid1.x.toFixed(2)} ${pMid1.y.toFixed(2)}, ${pMid2.x.toFixed(2)} ${pMid2.y.toFixed(2)}, ${pTip.x.toFixed(2)} ${pTip.y.toFixed(2)}`;
+
+      const outlineD = "M " + leftMargin.map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ") +
+                       " L " + rightMargin.slice().reverse().map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ") + " Z";
+
+      // 5 pairs of lateral side veins
+      const veins = [];
+      for (let v = 1; v <= 5; v++) {
+        const u = v / 6.5;
+        const origin = evalCubicBezier(pBase, pMid1, pMid2, pTip, u);
+        const lTarget = leftMargin[Math.round(u * numPts)];
+        const rTarget = rightMargin[Math.round(u * numPts)];
+
+        if (lTarget) {
+          veins.push(`M ${origin.x.toFixed(2)} ${origin.y.toFixed(2)} Q ${(origin.x + lTarget.x) * 0.5 + 3} ${(origin.y + lTarget.y) * 0.5 - 2} ${lTarget.x.toFixed(2)} ${lTarget.y.toFixed(2)}`);
+        }
+        if (rTarget) {
+          veins.push(`M ${origin.x.toFixed(2)} ${origin.y.toFixed(2)} Q ${(origin.x + rTarget.x) * 0.5 - 3} ${(origin.y + rTarget.y) * 0.5 - 2} ${rTarget.x.toFixed(2)} ${rTarget.y.toFixed(2)}`);
+        }
+      }
+
+      return { stalkD, outlineD, midribD, veins, attachT: 0, pBase };
+    }
+
+    /**
+     * Builds green pointed bract lobes ringing the underside of the head.
+     */
+    function buildBracts(cx, cy, radius, count = 15, tiltAngle = 0, squashY = 0.84) {
+      const bractPaths = [];
+      for (let i = 0; i < count; i++) {
+        const theta = (i / count) * Math.PI * 2 + rand(-0.08, 0.08);
+        const bLen = radius * rand(0.55, 0.85);
+        const bWidth = (radius * 0.22) * rand(0.85, 1.15);
+
+        // Radial vector rotated & squashed
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+
+        // Local unrotated coords
+        const lx0 = -Math.sin(theta) * bWidth * 0.5;
+        const ly0 =  Math.cos(theta) * bWidth * 0.5;
+        const lxTip = cosT * (radius * 0.65 + bLen);
+        const lyTip = sinT * (radius * 0.65 + bLen);
+
+        // Apply tilt and head perspective squash
+        const transformPt = (x, y) => {
+          const sy = y * squashY;
+          const rx = x * Math.cos(tiltAngle) - sy * Math.sin(tiltAngle);
+          const ry = x * Math.sin(tiltAngle) + sy * Math.cos(tiltAngle);
+          return { x: cx + rx, y: cy + ry };
+        };
+
+        const pBaseL = transformPt(lx0 + cosT * radius * 0.6, ly0 + sinT * radius * 0.6);
+        const pBaseR = transformPt(-lx0 + cosT * radius * 0.6, -ly0 + sinT * radius * 0.6);
+        const pTip = transformPt(lxTip, lyTip);
+
+        bractPaths.push(`M ${pBaseL.x.toFixed(2)} ${pBaseL.y.toFixed(2)} Q ${(pBaseL.x + pTip.x) * 0.5 + rand(-3, 3)} ${(pBaseL.y + pTip.y) * 0.5 + rand(-3, 3)} ${pTip.x.toFixed(2)} ${pTip.y.toFixed(2)} Q ${(pBaseR.x + pTip.x) * 0.5} ${(pBaseR.y + pTip.y) * 0.5} ${pBaseR.x.toFixed(2)} ${pBaseR.y.toFixed(2)} Z`);
+      }
+      return bractPaths;
+    }
+
+    /**
+     * Builds individual lance-shaped petals with creases and organic curve wobble.
+     */
+    function buildPetal(cx, cy, innerR, length, width, angle, tiltAngle, squashY, isFront) {
+      // Local petal coordinate system: Base at (0, innerR), extending outwards
+      const tipLen = length * rand(0.92, 1.08);
+      const wMid = width * rand(0.88, 1.12);
+
+      // Curve wobble (petal bends slightly left or right)
+      const bend = rand(-4.5, 4.5);
+
+      // 4 points of petal outline: Base, Left Belly, Tip, Right Belly
+      const localPts = [
+        { x: -wMid * 0.22, y: innerR },
+        { x: -wMid * 0.55 + bend * 0.4, y: innerR + tipLen * 0.42 },
+        { x: -wMid * 0.28 + bend * 0.8, y: innerR + tipLen * 0.82 },
+        { x: bend, y: innerR + tipLen }, // Tip
+        { x: wMid * 0.28 + bend * 0.8, y: innerR + tipLen * 0.82 },
+        { x: wMid * 0.55 + bend * 0.4, y: innerR + tipLen * 0.42 },
+        { x: wMid * 0.22, y: innerR }
+      ];
+
+      // Coordinate transformation with radial rotation + head tilt and squash
+      const rotCos = Math.cos(angle);
+      const rotSin = Math.sin(angle);
+      const tiltCos = Math.cos(tiltAngle);
+      const tiltSin = Math.sin(tiltAngle);
+
+      function transform(p) {
+        // 1. Radial orientation around head
+        const rx = p.x * rotCos - p.y * rotSin;
+        const ry = p.x * rotSin + p.y * rotCos;
+        // 2. Head perspective squash along Y then tilt
+        const sy = ry * squashY;
+        const fx = rx * tiltCos - sy * tiltSin;
+        const fy = rx * tiltSin + sy * tiltCos;
+        return { x: cx + fx, y: cy + fy };
+      }
+
+      const worldPts = localPts.map(transform);
+      const baseCenter = transform({ x: 0, y: innerR });
+
+      const dOutline = `M ${worldPts[0].x.toFixed(2)} ${worldPts[0].y.toFixed(2)} ` +
+        `C ${worldPts[1].x.toFixed(2)} ${worldPts[1].y.toFixed(2)}, ${worldPts[2].x.toFixed(2)} ${worldPts[2].y.toFixed(2)}, ${worldPts[3].x.toFixed(2)} ${worldPts[3].y.toFixed(2)} ` +
+        `C ${worldPts[4].x.toFixed(2)} ${worldPts[4].y.toFixed(2)}, ${worldPts[5].x.toFixed(2)} ${worldPts[5].y.toFixed(2)}, ${worldPts[6].x.toFixed(2)} ${worldPts[6].y.toFixed(2)} Z`;
+
+      // Center crease line running up the petal
+      const cTipPt = transform({ x: bend * 0.85, y: innerR + tipLen * 0.90 });
+      const midCreaseD = `M ${baseCenter.x.toFixed(2)} ${baseCenter.y.toFixed(2)} Q ${(baseCenter.x + cTipPt.x) * 0.5} ${(baseCenter.y + cTipPt.y) * 0.5} ${cTipPt.x.toFixed(2)} ${cTipPt.y.toFixed(2)}`;
+
+      // Front ring side creases
+      const sideCreases = [];
+      if (isFront) {
+        const sc1Start = transform({ x: -wMid * 0.14, y: innerR + tipLen * 0.12 });
+        const sc1End = transform({ x: -wMid * 0.22 + bend * 0.5, y: innerR + tipLen * 0.72 });
+        sideCreases.push(`M ${sc1Start.x.toFixed(2)} ${sc1Start.y.toFixed(2)} Q ${(sc1Start.x + sc1End.x)*0.5} ${(sc1Start.y + sc1End.y)*0.5} ${sc1End.x.toFixed(2)} ${sc1End.y.toFixed(2)}`);
+
+        const sc2Start = transform({ x: wMid * 0.14, y: innerR + tipLen * 0.12 });
+        const sc2End = transform({ x: wMid * 0.22 + bend * 0.5, y: innerR + tipLen * 0.72 });
+        sideCreases.push(`M ${sc2Start.x.toFixed(2)} ${sc2Start.y.toFixed(2)} Q ${(sc2Start.x + sc2End.x)*0.5} ${(sc2Start.y + sc2End.y)*0.5} ${sc2End.x.toFixed(2)} ${sc2End.y.toFixed(2)}`);
+      }
+
+      return { dOutline, midCreaseD, sideCreases, baseCenter };
+    }
+
+    /**
+     * Builds the textured seed head disc and phyllotaxis seed spiral paths.
+     */
+    function buildSeedHead(cx, cy, radius, tiltAngle, squashY, seedCount = 320) {
+      const tiltCos = Math.cos(tiltAngle);
+      const tiltSin = Math.sin(tiltAngle);
+
+      function transform(x, y) {
+        const sy = y * squashY;
+        const fx = x * tiltCos - sy * tiltSin;
+        const fy = x * tiltSin + sy * tiltCos;
+        return { x: cx + fx, y: cy + fy };
+      }
+
+      // 1. Wobbly Hand-Drawn Rim Outline
+      const rimPts = [];
+      const numRimSteps = 28;
+      for (let i = 0; i < numRimSteps; i++) {
+        const th = (i / numRimSteps) * Math.PI * 2;
+        const rJitter = radius * (1 + rand(-0.035, 0.035));
+        rimPts.push(transform(Math.cos(th) * rJitter, Math.sin(th) * rJitter));
+      }
+      const discD = "M " + rimPts.map(p => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L ") + " Z";
+
+      // 2. Phyllotaxis Spiral Seeds
+      // Golden angle in radians
+      const GOLDEN_ANGLE = 2.39996323;
+
+      // Group seeds into 4 path strings by radius band to avoid 300+ separate DOM circle nodes
+      let pathCore = "";       // Deep dark center
+      let pathMid = "";        // Warm chocolate/chestnut
+      let pathRim = "";        // Luminous amber florets
+      let pathHighlights = ""; // Bright golden pollen specks
+
+      for (let i = 0; i < seedCount; i++) {
+        const frac = (i + 0.5) / seedCount;
+        const r = radius * Math.sqrt(frac) * rand(0.97, 1.03);
+        const theta = i * GOLDEN_ANGLE;
+
+        const pt = transform(Math.cos(theta) * r, Math.sin(theta) * r);
+        // Seed dot radius scales with distance from center
+        const dotR = (0.75 + frac * 1.6) * rand(0.85, 1.15);
+
+        // SVG circle sub-path: M (cx-r) cy a r r 0 1 0 2r 0 a r r 0 1 0 -2r 0
+        const dotPath = `M ${(pt.x - dotR).toFixed(2)} ${pt.y.toFixed(2)} a ${dotR.toFixed(2)} ${dotR.toFixed(2)} 0 1 0 ${(dotR * 2).toFixed(2)} 0 a ${dotR.toFixed(2)} ${dotR.toFixed(2)} 0 1 0 ${(-dotR * 2).toFixed(2)} 0 `;
+
+        if (frac < 0.32) {
+          pathCore += dotPath;
+        } else if (frac < 0.76) {
+          pathMid += dotPath;
+        } else {
+          pathRim += dotPath;
+        }
+
+        // Random golden pollen specks
+        if (frac > 0.45 && rng() < 0.14) {
+          const hlR = dotR * 0.55;
+          const hPt = { x: pt.x + rand(-0.5, 0.5), y: pt.y - dotR * 0.4 };
+          pathHighlights += `M ${(hPt.x - hlR).toFixed(2)} ${hPt.y.toFixed(2)} a ${hlR.toFixed(2)} ${hlR.toFixed(2)} 0 1 0 ${(hlR * 2).toFixed(2)} 0 a ${hlR.toFixed(2)} ${hlR.toFixed(2)} 0 1 0 ${(-hlR * 2).toFixed(2)} 0 `;
+        }
+      }
+
+      return { discD, pathCore, pathMid, pathRim, pathHighlights };
+    }
+
+    // --- 5. COMPOSITION CONFIGURATION (THE CONFIG LIST) ---
+    /**
+     * Each sunflower is configured by its normalized scene coordinates and timings.
+     * Tune positions, sizes, and delays here.
+     */
+    const SCENE_CONFIG = [
+      // 0. The Majestic Hero (Tall Center)
+      {
+        id: "flower-center",
+        xRel: 0.50, yRel: 0.38,
+        headRadius: 62,
+        leanX: -8,
+        stemBaseX: 0.50, stemBaseY: 1.05,
+        stemWidthBase: 17, stemWidthTip: 11,
+        petalCount: 20,
+        petalLen: 92, petalWidth: 26,
+        startDelay: 0.2,
+        leafCount: 4,
+        swayPeriod: 8.2, swayAmp: 1.1,
+        minWidth: 0 // Always show
+      },
+      // 1. Medium-Tall Leaning Left
+      {
+        id: "flower-mid-left",
+        xRel: 0.34, yRel: 0.45,
+        headRadius: 52,
+        leanX: -36,
+        stemBaseX: 0.44, stemBaseY: 1.05,
+        stemWidthBase: 15, stemWidthTip: 10,
+        petalCount: 18,
+        petalLen: 78, petalWidth: 23,
+        startDelay: 2.4,
+        leafCount: 3,
+        swayPeriod: 7.2, swayAmp: 1.4,
+        minWidth: 0
+      },
+      // 2. Medium-Tall Leaning Right
+      {
+        id: "flower-mid-right",
+        xRel: 0.67, yRel: 0.44,
+        headRadius: 54,
+        leanX: 38,
+        stemBaseX: 0.56, stemBaseY: 1.05,
+        stemWidthBase: 16, stemWidthTip: 10,
+        petalCount: 19,
+        petalLen: 82, petalWidth: 24,
+        startDelay: 4.6,
+        leafCount: 3,
+        swayPeriod: 7.8, swayAmp: 1.3,
+        minWidth: 0
+      },
+      // 3. Lower Front Left (Slightly tilted foreground)
+      {
+        id: "flower-low-left",
+        xRel: 0.23, yRel: 0.62,
+        headRadius: 44,
+        leanX: -45,
+        stemBaseX: 0.38, stemBaseY: 1.05,
+        stemWidthBase: 14, stemWidthTip: 9,
+        petalCount: 17,
+        petalLen: 68, petalWidth: 21,
+        startDelay: 7.0,
+        leafCount: 2,
+        swayPeriod: 6.6, swayAmp: 1.6,
+        minWidth: 0
+      },
+      // 4. Lower Front Right (Foreground balance)
+      {
+        id: "flower-low-right",
+        xRel: 0.78, yRel: 0.60,
+        headRadius: 46,
+        leanX: 42,
+        stemBaseX: 0.62, stemBaseY: 1.05,
+        stemWidthBase: 14, stemWidthTip: 9,
+        petalCount: 17,
+        petalLen: 70, petalWidth: 22,
+        startDelay: 9.2,
+        leafCount: 2,
+        swayPeriod: 6.9, swayAmp: 1.5,
+        minWidth: 0
+      },
+      // 5. Far Left Wing (Visible on wider viewports)
+      {
+        id: "flower-wing-left",
+        xRel: 0.12, yRel: 0.54,
+        headRadius: 40,
+        leanX: -55,
+        stemBaseX: 0.32, stemBaseY: 1.05,
+        stemWidthBase: 13, stemWidthTip: 8,
+        petalCount: 16,
+        petalLen: 62, petalWidth: 19,
+        startDelay: 11.4,
+        leafCount: 2,
+        swayPeriod: 6.2, swayAmp: 1.8,
+        minWidth: 768 // Shown on tablets & desktops
+      },
+      // 6. Far Right Wing (Visible on wider viewports)
+      {
+        id: "flower-wing-right",
+        xRel: 0.88, yRel: 0.52,
+        headRadius: 42,
+        leanX: 52,
+        stemBaseX: 0.68, stemBaseY: 1.05,
+        stemWidthBase: 13, stemWidthTip: 8,
+        petalCount: 16,
+        petalLen: 64, petalWidth: 20,
+        startDelay: 13.0,
+        leafCount: 2,
+        swayPeriod: 6.4, swayAmp: 1.7,
+        minWidth: 920 // Shown on wide desktop screens
+      }
+    ];
+
+    // --- 6. ARTWORK GENERATION & ASSEMBLY ENGINE ---
+    function renderArtwork(seed) {
+      rng = createPRNG(seed);
+      document.getElementById("seed-indicator").textContent = `Seed: ${seed}`;
+
+      const svg = document.getElementById("sunflower-art");
+      const defs = document.getElementById("svg-defs");
+      const layerAmbient = document.getElementById("layer-ambient-glow");
+      const layerFlowers = document.getElementById("layer-flowers");
+      const layerPollen = document.getElementById("layer-pollen");
+      const layerVignette = document.getElementById("layer-vignette-grain");
+
+      // Clear previous layers
+      setupMasterDefs(defs);
+      layerAmbient.innerHTML = "";
+      layerFlowers.innerHTML = "";
+      layerPollen.innerHTML = "";
+      layerVignette.innerHTML = "";
+
+      // Canvas dimensions & responsive viewBox computation
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const aspect = vw / vh;
+
+      // Coordinate reference system: standard 1000 width, height adapts
+      let baseW = 1000;
+      let baseH = Math.round(baseW / aspect);
+      if (aspect < 0.75) {
+        // Narrow mobile portrait
+        baseH = 1350;
+        baseW = Math.round(baseH * aspect);
+      } else if (aspect > 1.8) {
+        // Ultra-wide
+        baseW = 1300;
+        baseH = Math.round(baseW / aspect);
+      }
+
+      svg.setAttribute("viewBox", `0 0 ${baseW} ${baseH}`);
+
+      // 1. Ambient Background Golden Glow
+      const glowCx = baseW * 0.50;
+      const glowCy = baseH * 0.52;
+      const glowR = Math.max(baseW, baseH) * 0.48;
+
+      const bgGlow = createSVGEl("circle", {
+        cx: glowCx, cy: glowCy, r: glowR,
+        fill: "url(#grad-bg-glow)",
+        class: "ambient-glow"
+      });
+      layerAmbient.appendChild(bgGlow);
+
+      // 2. Build Sunflowers
+      SCENE_CONFIG.forEach((cfg) => {
+        // Skip wing flowers if viewport is narrower than required
+        if (vw < cfg.minWidth) return;
+
+        const flowerGroup = createSVGEl("g", {
+          id: cfg.id,
+          class: "flower-group"
+        });
+
+        const flowerBaseX = cfg.stemBaseX * baseW;
+        const flowerBaseY = cfg.stemBaseY * baseH;
+        flowerGroup.style.setProperty("--base-x", `${flowerBaseX}px`);
+        flowerGroup.style.setProperty("--base-y", `${flowerBaseY}px`);
+        flowerGroup.style.setProperty("--sway-period", `${cfg.swayPeriod}s`);
+        flowerGroup.style.setProperty("--sway-amp", `${cfg.swayAmp}deg`);
+        flowerGroup.style.setProperty("--sway-delay", `${cfg.startDelay + 6.0}s`);
+
+        // Head center in screen space
+        const headCx = cfg.xRel * baseW + rand(-8, 8);
+        const headCy = cfg.yRel * baseH + rand(-10, 10);
+
+        // Stem Bezier Control Points
+        const p0 = { x: flowerBaseX, y: flowerBaseY };
+        const p3 = { x: headCx, y: headCy };
+        const p1 = {
+          x: flowerBaseX + (headCx - flowerBaseX) * 0.35 + cfg.leanX * 0.4,
+          y: flowerBaseY - (flowerBaseY - headCy) * 0.45
+        };
+        const p2 = {
+          x: headCx - cfg.leanX * 0.6,
+          y: headCy + (flowerBaseY - headCy) * 0.28
+        };
+
+        // Head tilt angle follows stem tangent at top
+        const stemTopTan = evalCubicBezierTangent(p0, p1, p2, p3, 1.0);
+        // Tilt head perpendicular to stem direction with natural droop
+        const headTilt = stemTopTan.angle - Math.PI / 2 + rand(-0.12, 0.12);
+        const squashY = rand(0.82, 0.88); // 3D perspective foreshortening
+
+        const tStart = cfg.startDelay;
+
+        // --- A. Behind-Head Halo Glow ---
+        const haloEl = createSVGEl("circle", {
+          cx: headCx, cy: headCy, r: cfg.headRadius * 2.2,
+          fill: "url(#grad-head-glow)",
+          class: "head-halo",
+          filter: "url(#soft-glow-blur)"
+        });
+        haloEl.style.setProperty("--origin-x", `${headCx}px`);
+        haloEl.style.setProperty("--origin-y", `${headCy}px`);
+        haloEl.style.setProperty("--delay", `${tStart + 2.8}s`);
+        haloEl.style.setProperty("--dur", "1.8s");
+        haloEl.style.setProperty("--target-opacity", "0.75");
+        flowerGroup.appendChild(haloEl);
+
+        // --- B. Stem ---
+        const stemGeom = buildStemGeometry(p0, p1, p2, p3, cfg.stemWidthBase, cfg.stemWidthTip);
+
+        // Stem Fill (fades in once outline finishes drawing upward)
+        const stemFill = createSVGEl("path", {
+          d: stemGeom.fillD,
+          fill: "url(#grad-stem)",
+          mask: "url(#stem-fade-mask)",
+          class: "fade-fill"
+        });
+        stemFill.style.setProperty("--fill-delay", `${tStart + 1.1}s`);
+        stemFill.style.setProperty("--fade-dur", "0.7s");
+        flowerGroup.appendChild(stemFill);
+
+        // Stem Left & Right Outlines (draw simultaneously from ground up)
+        const stemOutlineL = createSVGEl("path", {
+          d: stemGeom.leftLineD,
+          fill: "none",
+          stroke: "#263b15",
+          "stroke-width": "1.2",
+          "stroke-linecap": "round",
+          pathLength: "1",
+          mask: "url(#stem-fade-mask)",
+          class: "soften-outline"
+        });
+        stemOutlineL.style.setProperty("--delay", `${tStart}s`);
+        stemOutlineL.style.setProperty("--draw-dur", "1.3s");
+        stemOutlineL.style.setProperty("--soft-opacity", "0.35");
+        flowerGroup.appendChild(stemOutlineL);
+
+        const stemOutlineR = createSVGEl("path", {
+          d: stemGeom.rightLineD,
+          fill: "none",
+          stroke: "#263b15",
+          "stroke-width": "1.2",
+          "stroke-linecap": "round",
+          pathLength: "1",
+          mask: "url(#stem-fade-mask)",
+          class: "soften-outline"
+        });
+        stemOutlineR.style.setProperty("--delay", `${tStart}s`);
+        stemOutlineR.style.setProperty("--draw-dur", "1.3s");
+        stemOutlineR.style.setProperty("--soft-opacity", "0.35");
+        flowerGroup.appendChild(stemOutlineR);
+
+        // Tiny Stem Hairs
+        stemGeom.hairs.forEach(h => {
+          const hairLine = createSVGEl("line", {
+            x1: h.x1, y1: h.y1, x2: h.x2, y2: h.y2,
+            stroke: "#7da23e",
+            "stroke-width": "0.7",
+            "stroke-linecap": "round",
+            class: "fade-fill"
+          });
+          hairLine.style.setProperty("--fill-delay", `${tStart + 1.25}s`);
+          flowerGroup.appendChild(hairLine);
+        });
+
+        // --- C. Alternating Leaves ---
+        const leafConfigs = [
+          { u: 0.32, side: -1, len: 90, wid: 46, delayOff: 0.4 },
+          { u: 0.48, side:  1, len: 82, wid: 42, delayOff: 0.65 },
+          { u: 0.64, side: -1, len: 74, wid: 38, delayOff: 0.9 },
+          { u: 0.78, side:  1, len: 62, wid: 34, delayOff: 1.15 }
+        ];
+
+        for (let lIdx = 0; lIdx < cfg.leafCount; lIdx++) {
+          const lCfg = leafConfigs[lIdx];
+          const leafStemPt = evalCubicBezier(p0, p1, p2, p3, lCfg.u);
+          const leafStemTan = evalCubicBezierTangent(p0, p1, p2, p3, lCfg.u);
+          const leafGeom = buildLeafGeometry(leafStemPt, leafStemTan, lCfg.side, lCfg.len, lCfg.wid);
+
+          const leafDelay = tStart + lCfg.delayOff;
+
+          // 1. Stalk line draws on
+          const stalkLine = createSVGEl("path", {
+            d: leafGeom.stalkD,
+            fill: "none",
+            stroke: "#334c1b",
+            "stroke-width": "2.2",
+            pathLength: "1",
+            class: "draw-stroke"
+          });
+          stalkLine.style.setProperty("--delay", `${leafDelay}s`);
+          stalkLine.style.setProperty("--dur", "0.6s");
+          flowerGroup.appendChild(stalkLine);
+
+          // 2. Leaf Blade Fill
+          const leafFill = createSVGEl("path", {
+            d: leafGeom.outlineD,
+            fill: "url(#grad-leaf)",
+            class: "fade-fill"
+          });
+          leafFill.style.setProperty("--fill-delay", `${leafDelay + 0.35}s`);
+          leafFill.style.setProperty("--fade-dur", "0.65s");
+          flowerGroup.appendChild(leafFill);
+
+          // 3. Leaf Blade Outline
+          const leafOutline = createSVGEl("path", {
+            d: leafGeom.outlineD,
+            fill: "none",
+            stroke: "#1f3312",
+            "stroke-width": "1.3",
+            pathLength: "1",
+            class: "soften-outline"
+          });
+          leafOutline.style.setProperty("--delay", `${leafDelay + 0.15}s`);
+          leafOutline.style.setProperty("--draw-dur", "0.85s");
+          leafOutline.style.setProperty("--soft-opacity", "0.4");
+          flowerGroup.appendChild(leafOutline);
+
+          // 4. Midrib vein
+          const midribLine = createSVGEl("path", {
+            d: leafGeom.midribD,
+            fill: "none",
+            stroke: "#81a243",
+            "stroke-width": "1.4",
+            pathLength: "1",
+            class: "draw-stroke"
+          });
+          midribLine.style.setProperty("--delay", `${leafDelay + 0.45}s`);
+          midribLine.style.setProperty("--dur", "0.6s");
+          flowerGroup.appendChild(midribLine);
+
+          // 5. Lateral side veins
+          leafGeom.veins.forEach((vD, vIdx) => {
+            const vLine = createSVGEl("path", {
+              d: vD,
+              fill: "none",
+              stroke: "#6a8d31",
+              "stroke-width": "0.9",
+              pathLength: "1",
+              class: "draw-stroke"
+            });
+            vLine.style.setProperty("--delay", `${leafDelay + 0.6 + vIdx * 0.05}s`);
+            vLine.style.setProperty("--dur", "0.5s");
+            flowerGroup.appendChild(vLine);
+          });
+        }
+
+        // --- D. Green Involucral Bracts Behind Petals ---
+        const bracts = buildBracts(headCx, headCy, cfg.headRadius, 16, headTilt, squashY);
+        const bractsDelay = tStart + 1.4;
+        bracts.forEach((bD, bIdx) => {
+          const bractFill = createSVGEl("path", {
+            d: bD,
+            fill: "#324819",
+            stroke: "#1e2e0e",
+            "stroke-width": "0.9",
+            class: "fade-fill"
+          });
+          bractFill.style.setProperty("--fill-delay", `${bractsDelay + bIdx * 0.03}s`);
+          bractFill.style.setProperty("--fade-dur", "0.5s");
+          flowerGroup.appendChild(bractFill);
+        });
+
+        // --- E. Petals (Back Whorl then Front Whorl) ---
+        const numPetals = cfg.petalCount;
+        const innerDiscR = cfg.headRadius * 0.88;
+
+        // 1. Back Whorl (Deeper Spiced Amber/Bronze Tone)
+        const backWhorlDelay = tStart + 1.8;
+        for (let p = 0; p < numPetals; p++) {
+          const pAngle = (p / numPetals) * Math.PI * 2 + rand(-0.04, 0.04);
+          const pGeom = buildPetal(
+            headCx, headCy, innerDiscR,
+            cfg.petalLen * rand(0.92, 1.02),
+            cfg.petalWidth * 0.95,
+            pAngle, headTilt, squashY, false
+          );
+
+          const delay = backWhorlDelay + p * 0.045;
+
+          // Petal Group with unfurl transform
+          const petalG = createSVGEl("g", { class: "petal-unfurl" });
+          petalG.style.setProperty("--origin-x", `${pGeom.baseCenter.x}px`);
+          petalG.style.setProperty("--origin-y", `${pGeom.baseCenter.y}px`);
+          petalG.style.setProperty("--delay", `${delay}s`);
+          petalG.style.setProperty("--dur", "0.75s");
+          petalG.style.setProperty("--jitter-rot", `${rand(-4, 4)}deg`);
+
+          // Petal Fill
+          const petalFill = createSVGEl("path", {
+            d: pGeom.dOutline,
+            fill: "url(#grad-petal-back)",
+            class: "fade-fill"
+          });
+          petalFill.style.setProperty("--fill-delay", `${delay + 0.15}s`);
+          petalG.appendChild(petalFill);
+
+          // Petal Outline
+          const petalOutline = createSVGEl("path", {
+            d: pGeom.dOutline,
+            fill: "none",
+            stroke: "#984b06",
+            "stroke-width": "0.9",
+            pathLength: "1",
+            class: "soften-outline"
+          });
+          petalOutline.style.setProperty("--delay", `${delay}s`);
+          petalOutline.style.setProperty("--draw-dur", "0.65s");
+          petalOutline.style.setProperty("--soft-opacity", "0.4");
+          petalG.appendChild(petalOutline);
+
+          // Center Crease
+          const crease = createSVGEl("path", {
+            d: pGeom.midCreaseD,
+            fill: "none",
+            stroke: "#c4700f",
+            "stroke-width": "0.85",
+            pathLength: "1",
+            class: "draw-stroke"
+          });
+          crease.style.setProperty("--delay", `${delay + 0.25}s`);
+          crease.style.setProperty("--dur", "0.5s");
+          petalG.appendChild(crease);
+
+          flowerGroup.appendChild(petalG);
+        }
+
+        // 2. Front Whorl (Brighter Golden Yellow Tone, offset half step)
+        const frontWhorlDelay = tStart + 2.7;
+        const halfStep = Math.PI / numPetals;
+
+        for (let p = 0; p < numPetals; p++) {
+          const pAngle = (p / numPetals) * Math.PI * 2 + halfStep + rand(-0.03, 0.03);
+          const pGradId = (p % 2 === 0) ? "url(#grad-petal-a)" : "url(#grad-petal-b)";
+          const pGeom = buildPetal(
+            headCx, headCy, innerDiscR * 0.94,
+            cfg.petalLen * rand(0.98, 1.08),
+            cfg.petalWidth,
+            pAngle, headTilt, squashY, true
+          );
+
+          const delay = frontWhorlDelay + p * 0.048;
+
+          const petalG = createSVGEl("g", { class: "petal-unfurl" });
+          petalG.style.setProperty("--origin-x", `${pGeom.baseCenter.x}px`);
+          petalG.style.setProperty("--origin-y", `${pGeom.baseCenter.y}px`);
+          petalG.style.setProperty("--delay", `${delay}s`);
+          petalG.style.setProperty("--dur", "0.8s");
+          petalG.style.setProperty("--jitter-rot", `${rand(-3, 3)}deg`);
+
+          // Petal Fill
+          const petalFill = createSVGEl("path", {
+            d: pGeom.dOutline,
+            fill: pGradId,
+            class: "fade-fill"
+          });
+          petalFill.style.setProperty("--fill-delay", `${delay + 0.18}s`);
+          petalG.appendChild(petalFill);
+
+          // Petal Outline
+          const petalOutline = createSVGEl("path", {
+            d: pGeom.dOutline,
+            fill: "none",
+            stroke: "#b8640b",
+            "stroke-width": "1.0",
+            pathLength: "1",
+            class: "soften-outline"
+          });
+          petalOutline.style.setProperty("--delay", `${delay}s`);
+          petalOutline.style.setProperty("--draw-dur", "0.7s");
+          petalOutline.style.setProperty("--soft-opacity", "0.35");
+          petalG.appendChild(petalOutline);
+
+          // Center Crease
+          const crease = createSVGEl("path", {
+            d: pGeom.midCreaseD,
+            fill: "none",
+            stroke: "#d78414",
+            "stroke-width": "0.95",
+            pathLength: "1",
+            class: "draw-stroke"
+          });
+          crease.style.setProperty("--delay", `${delay + 0.28}s`);
+          crease.style.setProperty("--dur", "0.55s");
+          petalG.appendChild(crease);
+
+          // Side Creases
+          pGeom.sideCreases.forEach(scD => {
+            const sc = createSVGEl("path", {
+              d: scD,
+              fill: "none",
+              stroke: "#f3a824",
+              "stroke-width": "0.65",
+              "stroke-opacity": "0.7",
+              pathLength: "1",
+              class: "draw-stroke"
+            });
+            sc.style.setProperty("--delay", `${delay + 0.35}s`);
+            sc.style.setProperty("--dur", "0.45s");
+            petalG.appendChild(sc);
+          });
+
+          flowerGroup.appendChild(petalG);
+        }
+
+        // --- F. Seed Head Disc & Phyllotaxis Seeds ---
+        const seedDelay = tStart + 3.8;
+        const seedHead = buildSeedHead(headCx, headCy, cfg.headRadius * 0.95, headTilt, squashY, 320);
+
+        // 1. Under-Head Shadow Ring
+        const shadowRing = createSVGEl("ellipse", {
+          cx: headCx, cy: headCy,
+          rx: cfg.headRadius * 1.05, ry: cfg.headRadius * 1.05 * squashY,
+          fill: "url(#grad-head-shadow)",
+          transform: `rotate(${headTilt * 180 / Math.PI} ${headCx} ${headCy})`,
+          class: "fade-fill"
+        });
+        shadowRing.style.setProperty("--fill-delay", `${seedDelay}s`);
+        shadowRing.style.setProperty("--fade-dur", "0.6s");
+        flowerGroup.appendChild(shadowRing);
+
+        // 2. Seed Disc Base Fill
+        const discFill = createSVGEl("path", {
+          d: seedHead.discD,
+          fill: "url(#grad-seed-dome)",
+          class: "fade-fill"
+        });
+        discFill.style.setProperty("--fill-delay", `${seedDelay + 0.15}s`);
+        discFill.style.setProperty("--fade-dur", "0.7s");
+        flowerGroup.appendChild(discFill);
+
+        // 3. Wobbly Disc Outline
+        const discOutline = createSVGEl("path", {
+          d: seedHead.discD,
+          fill: "none",
+          stroke: "#261308",
+          "stroke-width": "1.4",
+          pathLength: "1",
+          class: "soften-outline"
+        });
+        discOutline.style.setProperty("--delay", `${seedDelay}s`);
+        discOutline.style.setProperty("--draw-dur", "0.9s");
+        discOutline.style.setProperty("--soft-opacity", "0.5");
+        flowerGroup.appendChild(discOutline);
+
+        // 4. Phyllotaxis Seeds Blooming (Grouped paths for max performance)
+        const seedGroup = createSVGEl("g", { class: "seed-spiral-bloom" });
+        seedGroup.style.setProperty("--origin-x", `${headCx}px`);
+        seedGroup.style.setProperty("--origin-y", `${headCy}px`);
+        seedGroup.style.setProperty("--delay", `${seedDelay + 0.35}s`);
+        seedGroup.style.setProperty("--dur", "1.3s");
+
+        // Core dark seeds
+        const pCore = createSVGEl("path", { d: seedHead.pathCore, fill: "#130905" });
+        seedGroup.appendChild(pCore);
+        // Mid-ring chestnut seeds
+        const pMid = createSVGEl("path", { d: seedHead.pathMid, fill: "#582d13" });
+        seedGroup.appendChild(pMid);
+        // Outer amber florets
+        const pRim = createSVGEl("path", { d: seedHead.pathRim, fill: "#b6681c" });
+        seedGroup.appendChild(pRim);
+        // Golden pollen specks
+        const pHL = createSVGEl("path", { d: seedHead.pathHighlights, fill: "#ffd34e" });
+        seedGroup.appendChild(pHL);
+
+        flowerGroup.appendChild(seedGroup);
+
+        // Append complete flower group to scene
+        layerFlowers.appendChild(flowerGroup);
+      });
+
+      // 3. Floating Drifting Pollen Specks
+      for (let s = 0; s < 12; s++) {
+        const sx = rand(baseW * 0.15, baseW * 0.85);
+        const sy = rand(baseH * 0.35, baseH * 0.85);
+        const sr = rand(1.2, 2.6);
+        const dur = rand(9, 16);
+        const delay = rand(2, 10);
+        const maxA = rand(0.4, 0.75);
+
+        const speck = createSVGEl("circle", {
+          cx: sx, cy: sy, r: sr,
+          fill: "#f8cf52",
+          class: "drifting-speck"
+        });
+        speck.style.setProperty("--dur", `${dur}s`);
+        speck.style.setProperty("--delay", `${delay}s`);
+        speck.style.setProperty("--max-alpha", maxA);
+        speck.style.setProperty("--drift-x", `${rand(-45, 45)}px`);
+        layerPollen.appendChild(speck);
+      }
+
+      // 4. Subtle Canvas Grain & Vignette Overlay
+      const grainRect = createSVGEl("rect", {
+        x: 0, y: 0, width: baseW, height: baseH,
+        filter: "url(#paper-grain)",
+        opacity: "0.18"
+      });
+      layerVignette.appendChild(grainRect);
+    }
+
+    // --- 7. INITIALIZATION & INTERACTIVITY ---
+    function init() {
+      renderArtwork(currentSeed);
+
+      // Replay Button
+      const btnReplay = document.getElementById("btn-replay");
+      btnReplay.addEventListener("click", () => {
+        currentSeed = randInt(100, 99999);
+        renderArtwork(currentSeed);
+      });
+
+      // Keyboard Shortcut 'R' for Replay
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "r" || e.key === "R") {
+          currentSeed = randInt(100, 99999);
+          renderArtwork(currentSeed);
+        }
+      });
+
+      // Debounced Responsive Resize (preserves finished art without restarting animation)
+      let resizeTimer = null;
+      let lastWidth = window.innerWidth;
+      let lastHeight = window.innerHeight;
+
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const nw = window.innerWidth;
+          const nh = window.innerHeight;
+          // Only re-render if significant viewport change occurred
+          if (Math.abs(nw - lastWidth) > 40 || Math.abs(nh - lastHeight) > 40) {
+            lastWidth = nw;
+            lastHeight = nh;
+            renderArtwork(currentSeed);
+          }
+        }, 220);
+      });
+    }
+
+    // Launch on DOM ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
