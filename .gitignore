@@ -1,0 +1,23 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test scratch files
+temp_test.mp4
+test_*.png
+preview_*.png
+step_*.png
+*.log
+
+# Generated large video renders (optional: uncomment to exclude mp4s)
+# *.mp4
