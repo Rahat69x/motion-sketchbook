@@ -84,7 +84,14 @@ function ResumeEditorContent({ params }: { params: Promise<{ id: string }> }) {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (viewMode === "editor") {
+      setViewMode("preview");
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    } else {
+      window.print();
+    }
   };
 
   if (loading) {

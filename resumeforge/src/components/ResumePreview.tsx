@@ -130,7 +130,7 @@ function ModernTemplate({ resume }: { resume: Resume }) {
           </h2>
           <div className="space-y-3">
             {projects.map((proj) => (
-              <div key={proj.id}>
+              <div key={proj.id} className="print-avoid-break">
                 <div className="flex flex-wrap items-baseline justify-between gap-1">
                   <span className="text-sm font-bold text-slate-950 flex items-center gap-1.5">
                     {proj.title}
@@ -167,7 +167,7 @@ function ModernTemplate({ resume }: { resume: Resume }) {
           </h2>
           <div className="space-y-3">
             {experience.map((exp) => (
-              <div key={exp.id}>
+              <div key={exp.id} className="print-avoid-break">
                 <div className="flex items-baseline justify-between">
                   <div>
                     <span className="text-sm font-bold text-slate-950">{exp.role}</span>
@@ -199,7 +199,7 @@ function ModernTemplate({ resume }: { resume: Resume }) {
           </h2>
           <div className="space-y-2">
             {education.map((edu) => (
-              <div key={edu.id} className="text-xs">
+              <div key={edu.id} className="print-avoid-break text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-slate-950 text-sm">{edu.institution}</span>
                   <span className="text-slate-600 font-medium">
@@ -283,7 +283,7 @@ function ClassicTemplate({ resume }: { resume: Resume }) {
             Education
           </h2>
           {education.map((edu) => (
-            <div key={edu.id} className="text-xs mb-2">
+            <div key={edu.id} className="print-avoid-break text-xs mb-2">
               <div className="flex justify-between font-bold text-slate-950">
                 <span>{edu.institution}</span>
                 <span>{edu.startDate} – {edu.endDate}</span>
@@ -304,7 +304,7 @@ function ClassicTemplate({ resume }: { resume: Resume }) {
             Professional Experience
           </h2>
           {experience.map((exp) => (
-            <div key={exp.id} className="text-xs mb-3">
+            <div key={exp.id} className="print-avoid-break text-xs mb-3">
               <div className="flex justify-between font-bold text-slate-950">
                 <span>{exp.company}</span>
                 <span>{exp.startDate} – {exp.current ? "Present" : exp.endDate}</span>
@@ -327,7 +327,7 @@ function ClassicTemplate({ resume }: { resume: Resume }) {
             Technical Projects
           </h2>
           {projects.map((p) => (
-            <div key={p.id} className="text-xs mb-2.5">
+            <div key={p.id} className="print-avoid-break text-xs mb-2.5">
               <div className="flex justify-between font-bold text-slate-950">
                 <span>{p.title}</span>
                 {hasItems(p.technologies) && (
@@ -399,7 +399,7 @@ function MinimalTemplate({ resume }: { resume: Resume }) {
         <section className="mb-3 text-xs">
           <h2 className="font-bold uppercase tracking-wider border-b border-black pb-0.5 mb-1.5">Experience</h2>
           {experience.map((e) => (
-            <div key={e.id} className="mb-2">
+            <div key={e.id} className="print-avoid-break mb-2">
               <div className="flex justify-between font-bold">
                 <span>{e.role} — {e.company}</span>
                 <span>{e.startDate} – {e.endDate}</span>
@@ -419,7 +419,7 @@ function MinimalTemplate({ resume }: { resume: Resume }) {
         <section className="mb-3 text-xs">
           <h2 className="font-bold uppercase tracking-wider border-b border-black pb-0.5 mb-1.5">Projects</h2>
           {projects.map((p) => (
-            <div key={p.id} className="mb-2">
+            <div key={p.id} className="print-avoid-break mb-2">
               <div className="flex justify-between font-bold">
                 <span>{p.title} {hasItems(p.technologies) && `(${p.technologies.join(", ")})`}</span>
                 {p.link && <span className="font-normal underline">{p.link}</span>}
@@ -439,7 +439,7 @@ function MinimalTemplate({ resume }: { resume: Resume }) {
         <section className="mb-3 text-xs">
           <h2 className="font-bold uppercase tracking-wider border-b border-black pb-0.5 mb-1">Education</h2>
           {education.map((edu) => (
-            <div key={edu.id} className="flex justify-between mb-1">
+            <div key={edu.id} className="print-avoid-break flex justify-between mb-1">
               <span><strong>{edu.institution}</strong> — {edu.degree} in {edu.fieldOfStudy}</span>
               <span>{edu.startDate} – {edu.endDate}</span>
             </div>
