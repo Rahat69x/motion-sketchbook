@@ -13,7 +13,38 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { resumeId, rawResumeText, jobTitle, jobCompany, jobDescription } = body;
 
-    if (!jobDescription || jobDescription.trim().length < 20) {
+    // 1. Input Type and Upper Boundary Checks (Denial of Service prevention)
+    if (typeof jobDescription !== "string") {
+      return NextResponse.json(
+        { error: "Invalid job description format. Expected text." },
+        { status: 400 }
+      );
+    }
+
+    if (jobDescription.length > 25000) {
+      return NextResponse.json(
+        { error: "Job description exceeds maximum allowed length of 25,000 characters." },
+        { status: 413 }
+      );
+    }
+
+    if (rawResumeText !== undefined && rawResumeText !== null) {
+      if (typeof rawResumeText !== "string") {
+        return NextResponse.json(
+          { error: "Invalid resume text format. Expected text." },
+          { status: 400 }
+        );
+      }
+      if (rawResumeText.length > 35000) {
+        return NextResponse.json(
+          { error: "Resume text exceeds maximum allowed length of 35,000 characters." },
+          { status: 413 }
+        );
+      }
+    }
+
+    // 2. Minimum Length Requirements
+    if (jobDescription.trim().length < 20) {
       return NextResponse.json(
         { error: "Please provide a detailed job description (minimum 20 characters) for accurate ATS matching." },
         { status: 400 }

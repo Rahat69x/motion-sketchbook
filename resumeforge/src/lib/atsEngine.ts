@@ -69,9 +69,12 @@ export function analyzeResumeForJob(
     }
   });
 
-  // Also extract explicit capitalized or highlighted terms from JD
+  // Also extract explicit capitalized or highlighted terms from JD (capped to prevent CPU saturation)
+  const MAX_CUSTOM_KEYWORDS = 30;
   const customWords = jobDescription.match(/\b[A-Z][a-zA-Z0-9+#.-]{1,18}\b/g) || [];
-  customWords.forEach((w) => {
+  let customCount = 0;
+  for (const w of customWords) {
+    if (customCount >= MAX_CUSTOM_KEYWORDS) break;
     const lw = w.toLowerCase();
     if (
       lw.length > 2 &&
@@ -80,9 +83,10 @@ export function analyzeResumeForJob(
     ) {
       if (CORE_KEYWORDS_DICTIONARY.includes(lw)) {
         detectedInJD.push(lw);
+        customCount++;
       }
     }
-  });
+  }
 
   // Ensure unique list
   const uniqueJDKeywords = Array.from(new Set(detectedInJD));

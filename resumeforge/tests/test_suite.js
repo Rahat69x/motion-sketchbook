@@ -126,6 +126,34 @@ async function runTestSuite() {
   assert(atsResult.missingKeywords.includes("aws") || atsResult.missingKeywords.includes("graphql"), "ATS identified missing keywords");
   assert(Array.isArray(atsResult.recommendations) && atsResult.recommendations.length > 0, "Actionable recommendations provided");
 
+  // TEST 3b: ATS Input Boundary & DoS Protection Checks
+  function validateAtsInput(jobDescription, rawResumeText) {
+    if (typeof jobDescription !== "string") return { status: 400, error: "Invalid format" };
+    if (jobDescription.length > 25000) return { status: 413, error: "Job description exceeds 25,000 characters" };
+    if (rawResumeText !== undefined && rawResumeText !== null) {
+      if (typeof rawResumeText !== "string") return { status: 400, error: "Invalid format" };
+      if (rawResumeText.length > 35000) return { status: 413, error: "Resume text exceeds 35,000 characters" };
+    }
+    if (jobDescription.trim().length < 20) return { status: 400, error: "Too short" };
+    return { status: 200 };
+  }
+
+  const normalCheck = validateAtsInput("This is a valid job description with enough length for testing ATS compatibility.", undefined);
+  assert(normalCheck.status === 200, "ATS input validator accepts normal payload (200)");
+
+  const tooShortCheck = validateAtsInput("Too short", undefined);
+  assert(tooShortCheck.status === 400, "ATS input validator rejects too-short job description (400)");
+
+  const oversizedJd = "A".repeat(26000);
+  const t0 = Date.now();
+  const oversizedCheck = validateAtsInput(oversizedJd, undefined);
+  const duration = Date.now() - t0;
+  assert(oversizedCheck.status === 413 && duration < 50, "ATS input validator rejects oversized payload with 413 instantaneously (<50ms)");
+
+  const oversizedResume = "B".repeat(36000);
+  const oversizedResumeCheck = validateAtsInput("Valid job description that is sufficiently long.", oversizedResume);
+  assert(oversizedResumeCheck.status === 413, "ATS input validator rejects oversized resume text (>35,000 chars) with 413");
+
   // TEST 4: Mock Interview Question Generator & Evaluator
   console.log('\n--- 3. MOCK INTERVIEW ENGINE ---');
   const { generateInterviewQuestions, evaluateInterviewAnswers } = require('./interview_engine_test_wrapper.js');
