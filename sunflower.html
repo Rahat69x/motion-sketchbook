@@ -1111,6 +1111,17 @@
       SCENE_CONFIG.forEach((cfg) => {
         if (vw < cfg.minWidth) return;
 
+        const flowerBaseX = cfg.stemBaseX * baseW;
+        const flowerBaseY = cfg.stemBaseY * baseH;
+
+        const depthWrapper = createSVGEl("g", {
+          id: `depth-${cfg.id}`,
+          class: "flower-depth-wrapper",
+          "data-depth-z": cfg.depthZ,
+          "data-base-x": flowerBaseX,
+          "data-base-y": flowerBaseY
+        });
+
         const flowerGroup = createSVGEl("g", {
           id: cfg.id,
           class: "flower-group"
@@ -1121,8 +1132,6 @@
           flowerGroup.setAttribute("filter", "url(#petal-shadow)");
         }
 
-        const flowerBaseX = cfg.stemBaseX * baseW;
-        const flowerBaseY = cfg.stemBaseY * baseH;
         flowerGroup.style.setProperty("--base-x", `${flowerBaseX}px`);
         flowerGroup.style.setProperty("--base-y", `${flowerBaseY}px`);
         flowerGroup.style.setProperty("--sway-period", `${cfg.swayPeriod}s`);
@@ -1543,7 +1552,8 @@
         pFlorets.style.setProperty("--fade-dur", "0.7s");
         flowerGroup.appendChild(pFlorets);
 
-        layerFlowers.appendChild(flowerGroup);
+        depthWrapper.appendChild(flowerGroup);
+        layerFlowers.appendChild(depthWrapper);
       });
 
       // 3. Drifting Pollen Specks (with simulated Depth of Field)
@@ -1613,6 +1623,9 @@
           animFrameId = null;
         }
         stage.style.transform = "none";
+        document.querySelectorAll(".flower-depth-wrapper").forEach((el) => {
+          el.removeAttribute("transform");
+        });
       }
 
       // Smooth Animation Loop
@@ -1640,6 +1653,16 @@
         // Skip writing styles on frames where nothing changed
         if (rotXFixed !== prevRenderedRotX || rotYFixed !== prevRenderedRotY) {
           stage.style.transform = `rotateX(${rotXFixed}deg) rotateY(${rotYFixed}deg) scale(1.02)`;
+
+          // True 3D depth parallax: foreground flowers (+55) shift more with tilt than background wings (-35)
+          const depthWrappers = document.querySelectorAll(".flower-depth-wrapper");
+          depthWrappers.forEach((el) => {
+            const depthZ = parseFloat(el.getAttribute("data-depth-z")) || 0;
+            const shiftX = (rotYFixed * (depthZ / 45) * 1.5);
+            const shiftY = (-rotXFixed * (depthZ / 45) * 1.1);
+            el.setAttribute("transform", `translate(${shiftX.toFixed(2)}, ${shiftY.toFixed(2)})`);
+          });
+
           prevRenderedRotX = rotXFixed;
           prevRenderedRotY = rotYFixed;
         }
