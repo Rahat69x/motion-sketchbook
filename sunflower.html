@@ -390,8 +390,6 @@
         <!-- Layered Scene Graph -->
         <g id="layer-ambient-glow"></g>
         <g id="layer-back-shadows"></g>
-        <g id="layer-stems"></g>
-        <g id="layer-leaves"></g>
         <g id="layer-flowers"></g>
         <g id="layer-pollen"></g>
         <g id="layer-vignette-grain" pointer-events="none"></g>
@@ -1063,8 +1061,6 @@
       const defs = document.getElementById("svg-defs");
       const layerAmbient = document.getElementById("layer-ambient-glow");
       const layerBackShadows = document.getElementById("layer-back-shadows");
-      const layerStems = document.getElementById("layer-stems");
-      const layerLeaves = document.getElementById("layer-leaves");
       const layerFlowers = document.getElementById("layer-flowers");
       const layerPollen = document.getElementById("layer-pollen");
       const layerVignette = document.getElementById("layer-vignette-grain");
@@ -1073,8 +1069,6 @@
       setupMasterDefs(defs);
       layerAmbient.innerHTML = "";
       layerBackShadows.innerHTML = "";
-      layerStems.innerHTML = "";
-      layerLeaves.innerHTML = "";
       layerFlowers.innerHTML = "";
       layerPollen.innerHTML = "";
       layerVignette.innerHTML = "";
@@ -1107,8 +1101,9 @@
       });
       layerAmbient.appendChild(bgGlow);
 
-      // 2. Build Sunflowers with 3D Depth
-      SCENE_CONFIG.forEach((cfg) => {
+      // 2. Build Sunflowers with 3D Depth (rendered back-to-front by depthZ)
+      const sortedConfig = [...SCENE_CONFIG].sort((a, b) => a.depthZ - b.depthZ);
+      sortedConfig.forEach((cfg) => {
         if (vw < cfg.minWidth) return;
 
         const flowerBaseX = cfg.stemBaseX * baseW;
