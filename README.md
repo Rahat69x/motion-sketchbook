@@ -14,6 +14,8 @@
 | :--- | :--- | :--- | :--- |
 | **[01. Oriental Lily Reel](#01-oriental-lily-reel-lilium-orientalis)** | Procedural 3D botanical bouquet simulation with staged growth, SSS lighting, and terminal playback. | `NumPy`, `OpenCV`, `imageio-ffmpeg` | **9:16 MP4 Video** (`1080x1920`, 30 fps) |
 | **[02. Lexical Eyes](#02-lexical-eyes-typographic-vision)** | Living typographic art application where a living pair of eyes is shaped entirely from literary quotes. | `Pygame-ce`, `Pillow`, `NumPy` | **Interactive App** (Full-screen / Windowed) |
+| **03. Sunflowers Painting** | Self-contained procedural botanical artwork with 3D depth parallax, organic sway, and instant resize. | `HTML5`, `CSS3`, `SVG`, `Vanilla JS` | **Single-file Web App** (`sunflower.html`) |
+| **04. ResumeForge** | Campus placement prep platform with ATS resume scanner, AI mock interviews, and aptitude practice. | `Next.js 16`, `React 19`, `TypeScript`, `Tailwind CSS` | **Full-Stack Web App** (`resumeforge/`) |
 
 ---
 
@@ -113,15 +115,47 @@ python lexical_eyes.py -w --theme glacier --quality high --quotes quotes.txt
 
 ---
 
+## 03. Sunflowers Painting (`sunflower.html`)
+
+A self-contained procedural botanical artwork with true 3D perspective parallax, organic breeze simulation, instant layout recalculation on viewport resize, and reduced-motion compliance.
+
+### Run
+Open `sunflower.html` in any modern web browser or run via local server:
+```bash
+python -m http.server 8000
+# Open http://localhost:8000/sunflower.html
+```
+
+---
+
+## 04. ResumeForge Platform (`resumeforge/`)
+
+A modern Next.js 16 / React 19 / TypeScript placement preparation platform featuring ATS resume scoring, AI mock interviews, aptitude testing, and print-ready PDF export. See [`resumeforge/README.md`](resumeforge/README.md) for full configuration and documentation.
+
+### Run & Build
+```bash
+cd resumeforge
+npm install
+npm test
+npm run build
+npm run dev
+```
+
+---
+
 ## Automated Verification & Tests
 
-Run the test suites for both projects:
+Run the test suites across all projects:
 ```bash
 # Test Oriental Lily Reel parametric geometry and rendering:
 python test_suite.py
 
-# Test Lexical Eyes themes, LUTs, SpriteCache, and controllers:
+# Test Lexical Eyes themes, LUTs, SpriteCache, and smoke test:
 python test_lexical_eyes.py
+python lexical_eyes.py --smoke-test
+
+# Test ResumeForge backend, engines, auth, ATS, and concurrency mutex:
+cd resumeforge && npm test && npm run build
 ```
 
 ---

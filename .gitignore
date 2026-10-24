@@ -19,6 +19,21 @@ preview_*.png
 step_*.png
 lexical_eyes_*.png
 *.log
+*.tmp
+.system_prompt*
+
+# Node & Next.js
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Application Data & Environment
+data/*.json
+.env*
+!.env.example
 
 # Generated large video renders (optional: uncomment to exclude mp4s)
 # *.mp4
+
