@@ -4,7 +4,15 @@ import bcrypt from "bcryptjs";
 import { findUserById, findUserByEmail, createUser } from "./db";
 import { User, UserPublicProfile } from "./types";
 
-const JWT_SECRET = process.env.JWT_SECRET || "resumeforge-super-secure-production-jwt-token-key-2026";
+export function getJwtSecret(): string {
+  const s = process.env.JWT_SECRET;
+  if (s && s.length >= 32) return s;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET (32+ chars) is required in production");
+  }
+  return "dev-only-secret-not-for-production";
+}
+
 export const COOKIE_NAME = "rf_session_token";
 
 interface TokenPayload {
@@ -22,12 +30,12 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export function signSessionToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
 }
 
 export function verifySessionToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    return jwt.verify(token, getJwtSecret()) as TokenPayload;
   } catch {
     return null;
   }

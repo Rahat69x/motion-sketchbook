@@ -65,7 +65,14 @@ cd resumeforge
 npm install --ignore-scripts
 ```
 
-### 2. Run Tests
+### 2. Environment Configuration
+Copy `.env.example` to `.env.local` to customize settings:
+```bash
+cp .env.example .env.local
+```
+> **Security Note:** In `production` mode (`NODE_ENV=production`), `JWT_SECRET` must be set with at least 32 characters, otherwise the runtime throws an authorization configuration error to prevent insecure token signing. In `development`, a safe dev fallback is used.
+
+### 3. Run Tests
 ```bash
 npm test
 ```

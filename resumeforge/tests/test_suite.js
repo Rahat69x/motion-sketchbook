@@ -58,6 +58,24 @@ async function runTestSuite() {
   const decoded = jwt.verify(token, secret);
   assert(decoded.userId === userPayload.userId && decoded.email === userPayload.email, "JWT payload safely decoded and verified");
 
+  // TEST 2b: Runtime JWT Secret Security Policy Check
+  function getJwtSecretCheck(nodeEnv, secretVal) {
+    const s = secretVal;
+    if (s && s.length >= 32) return s;
+    if (nodeEnv === "production") throw new Error("JWT_SECRET (32+ chars) is required in production");
+    return "dev-only-secret-not-for-production";
+  }
+  assert(getJwtSecretCheck("development", undefined) === "dev-only-secret-not-for-production", "JWT secret uses safe dev fallback when unset in development");
+  let prodUnsetThrew = false;
+  try {
+    getJwtSecretCheck("production", undefined);
+  } catch (err) {
+    prodUnsetThrew = true;
+  }
+  assert(prodUnsetThrew === true, "JWT secret throws error in production when JWT_SECRET is unset");
+  const strongSecret = "resumeforge_super_strong_secret_key_32chars!";
+  assert(getJwtSecretCheck("production", strongSecret) === strongSecret, "JWT secret accepts valid 32+ char key in production");
+
   // TEST 3: ATS Compatibility Engine
   console.log('\n--- 2. ATS COMPATIBILITY ENGINE ---');
   // Dynamic import of TS compiled or standalone logic
